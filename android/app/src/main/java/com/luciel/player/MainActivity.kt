@@ -199,6 +199,12 @@ class MainActivity : ComponentActivity() {
         val d = resources.displayMetrics.density
         js("window.LucielAndroidBridge&&LucielAndroidBridge.insets(${b.top / d},${b.right / d},${maxOf(b.bottom, ime) / d},${b.left / d})")
     }
+    /** full-screen visuals: hide status + navigation bars (an edge swipe shows them for a moment) */
+    fun setBarsHidden(on: Boolean) {
+        val c = WindowCompat.getInsetsController(window, window.decorView)
+        if (on) { c.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE; c.hide(WindowInsetsCompat.Type.systemBars()) }
+        else c.show(WindowInsetsCompat.Type.systemBars())
+    }
     fun setBars(bg: String, lightIcons: Boolean) {
         val c = WindowCompat.getInsetsController(window, window.decorView)
         c.isAppearanceLightStatusBars = !lightIcons; c.isAppearanceLightNavigationBars = !lightIcons

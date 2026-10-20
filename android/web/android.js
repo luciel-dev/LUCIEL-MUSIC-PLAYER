@@ -38,13 +38,53 @@
     im.onerror = () => cb(''); im.src = url;
   }
   let lastReportKey = '', reportTimer = 0;
+  // between two songs (ended -> next track loading) the element is briefly paused: report that as a transition, not a stop,
+  // so Android keeps the media notification / foreground service alive while the screen is off
+  let transitionUntil = 0, transitionTimer = 0;
+  const willAdvance = () => A.settings.repeat !== 'off' || A.tracks.length > 1;
+  audio.addEventListener('ended', () => {
+    if (!willAdvance()) return;
+    transitionUntil = performance.now() + 1500;
+    clearTimeout(transitionTimer); transitionTimer = setTimeout(() => { transitionUntil = 0; report(); }, 1600);
+  });
+  audio.addEventListener('playing', () => { transitionUntil = 0; });
+  const inTransition = () => performance.now() < transitionUntil;
+  // theme + tempo for the native floater (it draws its own Lucielle, so it needs the palette colours and the beat grid)
+  const cssVar = (n) => getComputedStyle(body).getPropertyValue(n).trim();
+  const sceneArt = new Map();
+  function packSceneArt(sc) {
+    if (!sc || !sc.pack) return '';
+    if (sceneArt.has(sc.id)) return sceneArt.get(sc.id);
+    sceneArt.set(sc.id, '');
+    const im = new Image();
+    im.onload = () => { try { const c = document.createElement('canvas'), k = Math.min(1, 480 / Math.max(im.naturalWidth, im.naturalHeight)); c.width = Math.max(1, im.naturalWidth * k | 0); c.height = Math.max(1, im.naturalHeight * k | 0); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); sceneArt.set(sc.id, c.toDataURL('image/jpeg', 0.8)); report(true); } catch (e) {} };
+    im.src = sc.bg || sc.thumb || '';
+    return '';
+  }
+  // the picture is big: send it once per scene (native keeps it while the scene id stays the same)
+  let sentArt = '';
+  function sceneArtOnce(sc) {
+    const a = packSceneArt(sc);
+    if (!a) return '';
+    if (sentArt === sc.id) return '';
+    sentArt = sc.id; return a;
+  }
+  function themeState() {
+    const sc = A.luciel && A.luciel.scene;
+    const tr = A.tracker;
+    return { bpm: tr && tr.bpm > 0 ? +tr.bpm.toFixed(2) : 0, beatPos: tr && tr.bpm > 0 ? +tr.beatAt(audio.currentTime || 0).toFixed(3) : 0,
+      accent: cssVar('--accent'), accent2: cssVar('--accent-2'), bg: cssVar('--bg-2'), bg3: cssVar('--bg-3'), text: cssVar('--text'),
+      lcdBg: cssVar('--lcd-bg'), lcdFg: cssVar('--lcd-fg'), frame1: cssVar('--c-frame-1'), frame2: cssVar('--c-frame-2'), frame3: cssVar('--c-frame-3'), frameDark: cssVar('--c-frame-dark'),
+      skin: A.settings.skin, palette: A.settings.palette, scene: sc ? sc.id : '', sceneName: sc ? sc.name : '', sceneArt: sceneArtOnce(sc), mascot: A.settings.mascot !== false };
+  }
   function report(force) {
     clearTimeout(reportTimer);
     reportTimer = setTimeout(() => {
       const t = A.current, q = A.tracks;
-      const st = { id: t ? t.id : '', title: t ? (document.getElementById('tTitle') || {}).textContent || t.name : '', artist: t ? (document.getElementById('tArtist') || {}).textContent || '' : '',
+      const playing = !!t && (!audio.paused || inTransition());
+      const st = Object.assign({ id: t ? t.id : '', title: t ? (document.getElementById('tTitle') || {}).textContent || t.name : '', artist: t ? (document.getElementById('tArtist') || {}).textContent || '' : '',
         album: t && t.meta ? t.meta.album || '' : '', duration: isFinite(audio.duration) ? audio.duration : 0, position: audio.currentTime || 0,
-        playing: !!t && !audio.paused, hasTrack: !!t, hasPrev: q.length > 1 || audio.currentTime > 3, hasNext: q.length > 1 };
+        playing, buffering: playing && (audio.paused || audio.readyState < 3), hasTrack: !!t, hasPrev: q.length > 1 || audio.currentTime > 3, hasNext: q.length > 1 || A.settings.repeat !== 'off' }, themeState());
       const key = st.id + '|' + (t && t.coverUrl || '');
       if (key !== lastReportKey || force) {
         lastReportKey = key;
@@ -52,19 +92,27 @@
       } else N.reportState(JSON.stringify(st));
     }, 60);
   }
-  ['play', 'pause', 'ended', 'loadedmetadata', 'durationchange', 'seeked', 'emptied'].forEach((ev) => audio.addEventListener(ev, () => report()));
+  ['play', 'playing', 'pause', 'ended', 'loadedmetadata', 'durationchange', 'seeked', 'emptied', 'waiting'].forEach((ev) => audio.addEventListener(ev, () => report()));
   setInterval(() => { if (!audio.paused) report(); }, 15000);
+  // the floater re-syncs its beat clock from these: tempo changes, scene/theme changes
+  let lastBpm = 0;
+  setInterval(() => { const b = A.tracker && A.tracker.bpm || 0; if (!audio.paused && Math.abs(b - lastBpm) > 0.3) { lastBpm = b; report(); } }, 2000);
+  ['luciel:settings', 'luciel:track'].forEach((ev) => window.addEventListener(ev, () => report()));
+  new MutationObserver(() => report()).observe(body, { attributes: true, attributeFilter: ['data-palette', 'data-skin', 'class'] });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) report(true); });
   new MutationObserver(() => report(true)).observe($('tTitle') || body, { childList: true, characterData: true, subtree: true });
 
   // commands from the notification / lock screen / headset / audio focus
+  // a play press with nothing loaded (headset button, notification, Bluetooth car kit) starts the queue; it never opens the file picker
+  const playFromIdle = () => { if (A.current) { A.togglePlay(); return; } if (A.tracks.length) A.playTrack(A.tracks[0]); };
   B.cmd = (cmd, arg) => {
-    if (cmd === 'play') { if (audio.paused) A.togglePlay(); }
-    else if (cmd === 'pause') { if (!audio.paused) audio.pause(); }
-    else if (cmd === 'toggle') A.togglePlay();
+    if (cmd === 'play') { if (audio.paused) playFromIdle(); }
+    else if (cmd === 'pause') { transitionUntil = 0; if (!audio.paused) audio.pause(); }
+    else if (cmd === 'toggle') { if (audio.paused) playFromIdle(); else { transitionUntil = 0; audio.pause(); } }
     else if (cmd === 'next') A.next();
     else if (cmd === 'prev') A.prev();
     else if (cmd === 'seek') { try { audio.currentTime = (arg || 0) / 1000; } catch (e) {} }
-    else if (cmd === 'duck') audio.volume = arg ? 0.3 : 1;
+    else if (cmd === 'duck') { if (A.engine.setDucked) A.engine.setDucked(!!arg); }
     setTimeout(() => report(), 120);
   };
 
@@ -124,6 +172,7 @@
     if (anyOverlay || (edit && !edit.hidden) || libOpen) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return true; }
     if (A.mini && A.mini.isOpen) { A.mini.close(); return true; }
     if (EXT.on) { exitExt(true); return true; }
+    if (window.LucielMobile && window.LucielMobile.active && window.LucielMobile.back()) return true;
     return false;
   };
 

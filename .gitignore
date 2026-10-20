@@ -49,3 +49,6 @@ __pycache__/
 Thumbs.db
 .idea/
 .vscode/
+
+# generated test audio (android/test-web/make-demo-media.py)
+android/test-web/demo-media/

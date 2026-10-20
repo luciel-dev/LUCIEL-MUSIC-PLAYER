@@ -69,6 +69,8 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const css = (name, el = document.body) => getComputedStyle(el).getPropertyValue(name).trim();
 
+  /** small change feed for other UIs (phone layout, Android): luciel:queue / luciel:track / luciel:library / luciel:settings */
+  const emit = (name) => { try { window.dispatchEvent(new Event('luciel:' + name)); } catch (e) {} };
   function toast(msg, kind) {
     const t = $('toast');
     t.textContent = msg; t.className = 'toast show' + (kind ? ' ' + kind : '');
@@ -324,7 +326,7 @@
     if (!current) return;
     const i = S.favorites.indexOf(current.id);
     if (i >= 0) S.favorites.splice(i, 1); else { S.favorites.push(current.id); luciel.favorite(); lcdFlash('FAVORITED <3'); }
-    $('btnFav').classList.toggle('on', i < 0); updateRow(current); save();
+    $('btnFav').classList.toggle('on', i < 0); updateRow(current); save(); emit('library');
   }
 
   function togglePlay() {
@@ -435,6 +437,7 @@
     marqueePos = 0; renderMarquee(true);
     updateMediaSession();
     updateTime();
+    emit('track');
   }
   /** Real cover art, or Lucielle scene art (by genre tag, else palette) when the track has none */
   function fallbackCover(t) { return window.Luciel.Scenes.coverFor(t && t.meta, S.palette); }
@@ -598,6 +601,7 @@
     $('plEmpty').hidden = tracks.length > 0;
     if (q && !html.length && tracks.length) $('plList').innerHTML = `<li class="pl-noresult">No matches for “${esc(q)}”</li>`;
     renderTotals();
+    emit('queue');
   }
   function updateRow(t) {
     const li = $('plList').querySelector(`[data-id="${t.id}"]`);
@@ -860,10 +864,10 @@
   $('balance').addEventListener('dblclick', () => setBalance(0));
   $('btnMute').onclick = () => setMuted(!S.muted);
 
-  function setShuffle(on) { S.shuffle = on; $('btnShuffle').classList.toggle('on', on); save(); }
+  function setShuffle(on) { S.shuffle = on; $('btnShuffle').classList.toggle('on', on); save(); emit('settings'); }
   function cycleRepeat() {
     S.repeat = S.repeat === 'off' ? 'all' : S.repeat === 'all' ? 'one' : 'off';
-    applyRepeat(); lcdFlash(`REPEAT: ${S.repeat.toUpperCase()}`); save();
+    applyRepeat(); lcdFlash(`REPEAT: ${S.repeat.toUpperCase()}`); save(); emit('settings');
   }
   function applyRepeat() {
     const b = $('btnRepeat');
@@ -982,7 +986,7 @@
     vizBig.colors = c; vizMini.colors = cm;
   }
   function setVizMode(m) {
-    S.vizMode = m; vizBig.mode = vizMini.mode = m;
+    S.vizMode = m; vizBig.mode = vizMini.mode = m; emit('settings');
     $('vizLabel').textContent = { spectrum: 'SPECTRUM', scope: 'OSCILLOSCOPE', both: 'SPECTRUM + SCOPE', off: 'OFF' }[m];
     $('vizWrap').classList.remove('label-flash'); void $('vizWrap').offsetWidth; $('vizWrap').classList.add('label-flash');
     save();
@@ -1127,7 +1131,7 @@
   [$('stage'), $('pxStage'), $('peekPl'), $('peekPx'), $('peekEq')].forEach((el) => el && el.addEventListener('click', () => luciel.clickReact()));
   $('btnFav').onclick = toggleFavorite;
   const sceneIds = () => ['auto', ...window.Luciel.Scenes.list.map((x) => x.id)];
-  function setScene(id, quiet) { S.scene = id; luciel.setManual(id); markSceneGrid(); save(); if (!quiet) toast(id === 'auto' ? 'Scene: auto (genre / tempo / mood)' : `Scene: ${window.Luciel.Scenes.byId(id).name}`); }
+  function setScene(id, quiet) { S.scene = id; luciel.setManual(id); markSceneGrid(); save(); emit('settings'); if (!quiet) toast(id === 'auto' ? 'Scene: auto (genre / tempo / mood)' : `Scene: ${window.Luciel.Scenes.byId(id).name}`); }
   function stepScene(d) { const ids = sceneIds(); setScene(ids[(ids.indexOf(S.scene) + d + ids.length) % ids.length]); }
   ['scPrev', 'scPrevA'].forEach((id) => { $(id).onclick = (e) => { e.stopPropagation(); stepScene(-1); }; });
   ['scNext', 'scNextA'].forEach((id) => { $(id).onclick = (e) => { e.stopPropagation(); stepScene(1); }; });
@@ -1286,8 +1290,10 @@
     queueRemove: (ids) => removeTracks(ids),
     setQueue: (ids) => { tracks = ids.map((id) => lib.get(id)).filter(Boolean); renderPlaylist(); save(); },
     edit: (list) => editTracks(list), openFiles, openFolder,
+    changed: (what) => emit(what || 'library'),
   };
   const library = window.LucielLibrary.create(libApi);
+  { const refresh = library.refresh; library.refresh = () => { refresh(); emit('library'); }; }
   const editor = window.LucielEditor.create(Object.assign({}, libApi, {
     persist: (t) => persist(t),
     /** apply an edit: new file bytes (tags written in-file) or library overrides, plus rename */
@@ -1405,6 +1411,7 @@
   }
 
   // test/debug hook
-  window.Luciel.app = window.AeroAmp = { packs: packsUI, mini: { toggle: toggleMini, open: openMiniOverlay, close: closeMini, popOut: popOutMini, state: miniState, cmd: miniCmd, get overlay() { return MINI.overlay; }, get pip() { return MINI.pip; }, get isOpen() { return miniIsOpen(); } }, nativeOpen, library, editor, lib, editTracks, playList, enqueue, removeFromLibrary, luciel, tracker, setScene, toggleFavorite, addFiles, applyTheme, applyPreset, get settings() { return S; }, get tracks() { return tracks; }, get current() { return current; }, engine, playTrack, next, prev, THEMES, setVizMode };
+  window.Luciel.app = window.AeroAmp = { packs: packsUI, mini: { toggle: toggleMini, open: openMiniOverlay, close: closeMini, popOut: popOutMini, state: miniState, cmd: miniCmd, get overlay() { return MINI.overlay; }, get pip() { return MINI.pip; }, get isOpen() { return miniIsOpen(); } }, nativeOpen, library, editor, lib, editTracks, playList, enqueue, removeFromLibrary, luciel, tracker, setScene, toggleFavorite, addFiles, applyTheme, applyPreset, get settings() { return S; }, get tracks() { return tracks; }, get current() { return current; }, engine, playTrack, next, prev, THEMES, setVizMode,
+    api: libApi, togglePlay, play, pause, stop, setShuffle, cycleRepeat, cycleViz, stepScene, sceneIds, setVolume, fmt, title: displayTitle, artist: displayArtist, fallbackCover, PALETTES, openOverlay, closeOverlays, toast, save, emit };
   init();
 })();

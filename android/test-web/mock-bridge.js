@@ -6,7 +6,7 @@ window.__media = __MEDIA__;
 const res = (id, ok, v) => setTimeout(() => window.LucielAndroidBridge._resolve(id, ok, v), 30);
 window.LucielAndroid = {
   version: () => '1.0.0',
-  info: () => JSON.stringify({ version: '1.0.0', sdk: 37, device: 'Headless Test', perms: window.__perms, prefs: { overlay: true, spotifyOnly: false, visualizer: true, fallbackBpm: 120, autoExtMode: true, bgPlay: true, autoHide: 20, overlayScene: 'auto' } }),
+  info: () => JSON.stringify({ version: '1.0.0', sdk: 37, device: 'Headless Test', perms: window.__perms, prefs: Object.assign({ overlay: true, spotifyOnly: false, visualizer: true, fallbackBpm: 120, autoExtMode: true, bgPlay: true, autoHide: 20, overlayScene: 'auto', autoFloater: false }, window.__prefs) }),
   reportState: (j) => window.__reports.push(JSON.parse(j)),
   scanLibrary: (id) => { window.__calls.push('scan'); res(id, true, window.__media); },
   pickAudio: (id) => { window.__calls.push('pickAudio'); res(id, true, window.__media.slice(0, 2)); },
@@ -26,6 +26,7 @@ window.LucielAndroid = {
   },
   extCommand: (c, a) => window.__calls.push('ext:' + c),
   extTap: () => (window.__tapBpm = 124), extSetBpm: () => {}, extUse: (on) => window.__calls.push('extUse:' + on), beatSource: () => 'live',
-  setPref: (k, v) => { window.__prefs[k] = v; }, open: (w) => window.__calls.push('open:' + w),
+  setPref: (k, v) => { window.__prefs[k] = v === 'true' ? true : v === 'false' ? false : v; }, open: (w) => window.__calls.push('open:' + w),
   systemBars: (bg, light) => { window.__bars = { bg, light }; }, haptic: () => {}, toast: () => {}, exitApp: () => {},
+  floater: (c) => window.__calls.push('floater:' + c), immersive: (on) => window.__calls.push('immersive:' + on),
 };

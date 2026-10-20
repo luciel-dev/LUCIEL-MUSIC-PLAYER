@@ -34,7 +34,7 @@ class WebBridge(private val act: MainActivity) {
         put("prefs", JSONObject().apply {
             put("overlay", prefs.overlayEnabled); put("spotifyOnly", prefs.spotifyOnly); put("visualizer", prefs.useVisualizer)
             put("fallbackBpm", prefs.fallbackBpm.toDouble()); put("autoExtMode", prefs.autoSpotifyMode); put("bgPlay", prefs.backgroundPlay)
-            put("autoHide", prefs.autoHideSec); put("overlayScene", prefs.overlayScene)
+            put("autoHide", prefs.autoHideSec); put("overlayScene", prefs.overlayScene); put("autoFloater", prefs.autoFloater)
         })
     }.toString()
 
@@ -58,14 +58,20 @@ class WebBridge(private val act: MainActivity) {
             hasPrev = o.optBoolean("hasPrev", true), hasNext = o.optBoolean("hasNext", true),
             artData = if (art.startsWith("data:")) try { Base64.decode(art.substringAfter(","), Base64.DEFAULT) } catch (_: Throwable) { null } else null,
             artUri = if (art.startsWith("content:")) Uri.parse(art) else null,
+            buffering = o.optBoolean("buffering"), bpm = o.optDouble("bpm", 0.0).toFloat(), beatPos = o.optDouble("beatPos", 0.0),
+            theme = themeOf(o), sceneId = o.optString("scene"), mascotOn = o.optBoolean("mascot", true),
+            sceneArt = o.optString("sceneArt", "").let { a -> if (a.startsWith("data:")) try { Base64.decode(a.substringAfter(","), Base64.DEFAULT) } catch (_: Throwable) { null } else null },
         )
         // keep the last artwork if this update didn't carry one for the same track
         val prev = lastState
-        val merged = if (st.artData == null && st.artUri == null && prev != null && prev.id == st.id && !o.optBoolean("artCleared")) st.copy(artData = prev.artData, artUri = prev.artUri) else st
+        var merged = if (st.artData == null && st.artUri == null && prev != null && prev.id == st.id && !o.optBoolean("artCleared")) st.copy(artData = prev.artData, artUri = prev.artUri) else st
+        // the pack scene picture arrives once it has loaded; keep it while the scene stays the same
+        if (merged.sceneArt == null && prev?.sceneArt != null && prev.sceneId == merged.sceneId) merged = merged.copy(sceneArt = prev.sceneArt)
         lastState = merged
         main.post {
             if (merged.playing || merged.hasTrack) act.ensurePlaybackService()
             PlaybackService.instance?.onWebState(merged)
+            FloaterController.onWebState(merged)
         }
     }
 
@@ -123,14 +129,28 @@ class WebBridge(private val act: MainActivity) {
             "bgPlay" -> prefs.backgroundPlay = value == "true"
             "autoHide" -> prefs.autoHideSec = value.toIntOrNull() ?: 20
             "overlayScene" -> prefs.overlayScene = value
+            "autoFloater" -> prefs.autoFloater = value == "true"
         }
         OverlayController.instance?.refresh()
+        FloaterController.update()
     }
     @JavascriptInterface fun open(what: String) = main.post { act.openSystem(what) }
     @JavascriptInterface fun systemBars(bg: String, lightIcons: Boolean) = main.post { act.setBars(bg, lightIcons) }
     @JavascriptInterface fun haptic() = main.post { act.window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY) }
     @JavascriptInterface fun toast(msg: String) = main.post { android.widget.Toast.makeText(act, msg, android.widget.Toast.LENGTH_SHORT).show() }
     @JavascriptInterface fun exitApp() = main.post { act.moveTaskToBack(true) }
+
+    /** Luciel's own floating mini player: "show" = Pop out (then step aside so it floats over the home screen / other apps), "hide" = close */
+    @JavascriptInterface fun floater(cmd: String) = main.post {
+        when (cmd) {
+            "show" -> if (FloaterController.popOut()) act.moveTaskToBack(true) else act.openSystem("overlay")
+            "hide" -> FloaterController.close()
+        }
+    }
+    @JavascriptInterface fun floaterState(): String = JSONObject().put("showing", FloaterController.isShowing).put("poppedOut", FloaterController.poppedOut)
+        .put("decision", FloaterController.decision().name).put("rect", FloaterController.windowRect()?.let { JSONArray(it.toList()) } ?: JSONObject.NULL).toString()
+    /** tap on the stage: hide the system bars (swipe from an edge brings them back) */
+    @JavascriptInterface fun immersive(on: Boolean) = main.post { act.setBarsHidden(on) }
 
     fun resolve(id: Int, ok: Boolean, valueJson: String) = main.post { act.js("window.LucielAndroidBridge&&LucielAndroidBridge._resolve($id,$ok,$valueJson)") }
 
@@ -142,6 +162,14 @@ class WebBridge(private val act: MainActivity) {
         /** session / audio focus / noisy -> page */
         fun sendCommand(cmd: String, arg: Long = 0) = h.post {
             webRef?.get()?.evaluateJavascript("window.LucielAndroidBridge&&LucielAndroidBridge.cmd(${JSONObject.quote(cmd)},$arg)", null)
+        }
+
+        fun themeOf(o: JSONObject): FloaterTheme {
+            val d = FloaterTheme()
+            fun c(k: String, fb: Int) = CssColor.parse(o.optString(k, ""), fb)
+            return FloaterTheme(skin = o.optString("skin", "aero").ifBlank { "aero" }, palette = o.optString("palette", "aero").ifBlank { "aero" },
+                accent = c("accent", d.accent), accent2 = c("accent2", d.accent2), bg = c("bg", d.bg), bg3 = c("bg3", d.bg3), text = c("text", d.text),
+                lcdBg = c("lcdBg", d.lcdBg), lcdFg = c("lcdFg", d.lcdFg), frame1 = c("frame1", d.frame1), frame2 = c("frame2", d.frame2), frame3 = c("frame3", d.frame3), frameDark = c("frameDark", d.frameDark))
         }
 
         fun extJson(t: ExtTrack?): JSONObject = if (t == null) JSONObject().put("active", false) else JSONObject().apply {

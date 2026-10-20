@@ -13,6 +13,8 @@ class LucielApp : Application() {
         })
         Prefs.get(this)
         NowPlayingHub.init(this)
+        FloaterController.init(this)
+        if (BuildConfig.DEBUG) DebugFloaterHook.register(this)
     }
     companion object { const val CH_OVERLAY = "overlay" }
 }

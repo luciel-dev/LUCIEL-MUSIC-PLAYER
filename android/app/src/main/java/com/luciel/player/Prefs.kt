@@ -30,8 +30,20 @@ class Prefs(ctx: Context) {
     var autoSpotifyMode: Boolean get() = sp.getBoolean("autoExtMode", true); set(v) = sp.edit().putBoolean("autoExtMode", v).apply()
     /** keep playing (WebView alive) when the user backs out of the app */
     var backgroundPlay: Boolean get() = sp.getBoolean("bgPlay", true); set(v) = sp.edit().putBoolean("bgPlay", v).apply()
+    /** Luciel's own floater: pop out automatically when leaving the app while Luciel plays */
+    var autoFloater: Boolean get() = sp.getBoolean("autoFloater", false); set(v) = sp.edit().putBoolean("autoFloater", v).apply()
+    /** "compact" | "large" | "bubble" */
+    var floaterMode: String get() = sp.getString("floaterMode", "compact") ?: "compact"; set(v) = sp.edit().putString("floaterMode", v).apply()
+    /** mode to go back to when the bubble is tapped */
+    var floaterLastMode: String get() = sp.getString("floaterLast", "compact") ?: "compact"; set(v) = sp.edit().putString("floaterLast", v).apply()
+    var floaterX: Int get() = sp.getInt("floaterX", -1); set(v) = sp.edit().putInt("floaterX", v).apply()
+    var floaterY: Int get() = sp.getInt("floaterY", -1); set(v) = sp.edit().putInt("floaterY", v).apply()
+    var floaterCompactDp: Int get() = sp.getInt("floaterCompactDp", 316); set(v) = sp.edit().putInt("floaterCompactDp", v.coerceIn(FLOATER_COMPACT_MIN, FLOATER_COMPACT_MAX)).apply()
+    var floaterLargeDp: Int get() = sp.getInt("floaterLargeDp", 252); set(v) = sp.edit().putInt("floaterLargeDp", v.coerceIn(FLOATER_LARGE_MIN, FLOATER_LARGE_MAX)).apply()
 
     companion object {
+        const val FLOATER_COMPACT_MIN = 264; const val FLOATER_COMPACT_MAX = 420
+        const val FLOATER_LARGE_MIN = 200; const val FLOATER_LARGE_MAX = 360
         @Volatile private var inst: Prefs? = null
         fun get(ctx: Context): Prefs = inst ?: synchronized(this) { inst ?: Prefs(ctx).also { inst = it } }
         const val SPOTIFY = "com.spotify.music"

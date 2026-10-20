@@ -38,14 +38,15 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
         val v = view
         if (t == null) { main.removeCallbacks(hideRunnable); hide(); return }
         if (dismissedKey != null && dismissedKey != t.trackKey) dismissedKey = null
-        val want = prefs.overlayEnabled && canShow() && !appInFront && dismissedKey == null
+        // Luciel's own floater owns the screen while Luciel plays (one floating window at a time)
+        val want = prefs.overlayEnabled && canShow() && !appInFront && dismissedKey == null && FloaterController.allowsExt()
         if (t.playing) {
             main.removeCallbacks(hideRunnable)
             if (want && v == null) show()
         } else if (v != null && prefs.autoHideSec > 0) {
             main.removeCallbacks(hideRunnable); main.postDelayed(hideRunnable, prefs.autoHideSec * 1000L)
         }
-        if (!want && v != null && (appInFront || !prefs.overlayEnabled)) hide()
+        if (!want && v != null && (appInFront || !prefs.overlayEnabled || !FloaterController.allowsExt())) hide()
         view?.track = t
     }
 
@@ -83,6 +84,9 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
 
     val isShowing get() = view != null
 
+    /** would the card like to be on screen for the current outside track? (used by the overlay policy) */
+    fun wantsCard(): Boolean { val t = NowPlayingHub.current ?: return false; return prefs.overlayEnabled && (dismissedKey == null || dismissedKey != t.trackKey) }
+
     private fun applySize() { val v = view ?: return; val p = lp ?: return; p.width = widthPx(); try { wm.updateViewLayout(v, p) } catch (_: Throwable) {} }
 
     private fun clampToScreen() {
@@ -112,6 +116,6 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
         @Volatile var instance: OverlayController? = null
         /** Luciel's own window is in front → hide the overlay (the full scene view is right there) */
         @Volatile var appInFront = false
-            set(v) { field = v; instance?.refresh() }
+            set(v) { field = v; FloaterController.appInFront = v; instance?.refresh() }
     }
 }

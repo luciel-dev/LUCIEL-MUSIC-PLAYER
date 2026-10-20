@@ -87,10 +87,12 @@
       if (this.pan && this.pan.pan) this.pan.pan.setTargetAtTime(v, this.ctx.currentTime, 0.02);
     }
     applyVolume() {
-      const v = this.muted ? 0 : this.volume * this.volume; // perceptual curve
+      const duck = this.ducked ? 0.3 : 1;   // the system asked us to lower the volume (navigation prompt, notification)
+      const v = this.muted ? 0 : this.volume * this.volume * duck; // perceptual curve
       if (this.out) this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.015);
-      else this.audio.volume = this.muted ? 0 : this.volume;
+      else this.audio.volume = this.muted ? 0 : this.volume * duck;
     }
+    setDucked(on) { this.ducked = !!on; this.applyVolume(); }
     setVolume(v) { this.volume = v; this.applyVolume(); }
     setMuted(m) { this.muted = m; this.applyVolume(); }
     /** Combined magnitude response in dB for an array of frequencies (for the EQ graph). */

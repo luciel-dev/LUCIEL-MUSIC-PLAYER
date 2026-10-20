@@ -15,7 +15,10 @@ class LucielleAssets(private val ctx: Context) {
     private val sceneCache = LinkedHashMap<String, Bitmap>(4, 0.75f, true)
     private var idle: Bitmap? = null
     private var icon: Bitmap? = null
-    val scenes: List<Scene> by lazy { loadScenes() }
+    /** every bundled scene (pixel ones too: the floater follows the page, which uses them in Classic) */
+    val allScenes: List<Scene> by lazy { loadScenes() }
+    /** scenes offered by the outside-player card's picker */
+    val scenes: List<Scene> by lazy { allScenes.filter { it.kind != "pixel" } }
     private val danceMeta: JSONObject? by lazy { try { JSONObject(read("www/mascot/dance/dance.json")) } catch (e: Throwable) { null } }
 
     private fun read(path: String) = ctx.assets.open(path).bufferedReader().use { it.readText() }
@@ -40,8 +43,8 @@ class LucielleAssets(private val ctx: Context) {
 
     /** scene backgrounds; scenes whose art already contains Lucielle get swapped for a background-only one */
     fun sceneArt(id: String, large: Boolean): Bitmap? {
-        val sc = scenes.firstOrNull { it.id == id } ?: scenes.firstOrNull { it.id == "pop" } ?: return null
-        val use = if (sc.kind == "full") scenes.firstOrNull { it.id == FULL_SWAP[sc.id] } ?: sc else sc
+        val sc = allScenes.firstOrNull { it.id == id } ?: allScenes.firstOrNull { it.id == "pop" } ?: return null
+        val use = if (sc.kind == "full") allScenes.firstOrNull { it.id == FULL_SWAP[sc.id] } ?: sc else sc
         val path = if (large) use.image else use.thumb
         sceneCache[path]?.let { return it }
         val b = bmp("www/$path") ?: return null
@@ -53,7 +56,6 @@ class LucielleAssets(private val ctx: Context) {
     private fun loadScenes(): List<Scene> = try {
         val arr = JSONObject(read("www/art/scenes.json")).getJSONArray("scenes")
         (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Scene(it.getString("id"), it.optString("name"), it.optString("kind"), it.optString("image"), it.optString("thumb")) } }
-            .filter { it.kind != "pixel" }
     } catch (e: Throwable) { emptyList() }
 
     companion object {

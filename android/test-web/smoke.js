@@ -41,8 +41,8 @@ async function charOpacity(page, ms = 1500) {
   await page.reload({ waitUntil: 'networkidle' });
   await page.evaluate(() => window.LucielAndroidBridge.insets(32, 0, 24, 0));
 
-  ok(await page.evaluate(() => document.body.classList.contains('android') && !!document.getElementById('btnAndroid')), 'android layer active, title-bar button present');
-  ok(await page.evaluate(() => getComputedStyle(document.body).paddingTop === '32px'), 'edge-to-edge insets applied as padding');
+  ok(await page.evaluate(() => document.body.classList.contains('android') && document.body.classList.contains('m-ui') && window.LucielMobile.active), 'android layer active, phone layout (tabs) active');
+  ok(await page.evaluate(() => { const r = document.querySelector('#mShell .m-player').getBoundingClientRect(), t = document.getElementById('mTabs').getBoundingClientRect(); return Math.round(r.top) === 32 && Math.round(innerHeight - t.bottom) === 0 && Math.round(t.height) === 60 + 24; }), 'edge-to-edge insets keep the screens clear of the status bar and the gesture bar');
   ok(await page.evaluate(() => !!window.__bars && /^#[0-9a-f]{6}$/.test(window.__bars.bg)), 'system bar colour reported to Android');
 
   // 1) phone library scan (auto on first launch since music access is granted)
@@ -71,9 +71,13 @@ async function charOpacity(page, ms = 1500) {
   ok(await page.evaluate(() => window.Luciel.app.current === window.Luciel.app.tracks[1] && !window.Luciel.app.engine.audio.paused), 'notification "next" skips and plays');
   await page.evaluate(() => window.LucielAndroidBridge.cmd('seek', 3000)); await page.waitForTimeout(800);
   ok(await page.evaluate(() => window.Luciel.app.engine.audio.currentTime >= 2.9), 'seek from the lock screen');
-  await page.evaluate(() => window.LucielAndroidBridge.cmd('duck', 1));
-  ok(await page.evaluate(() => window.Luciel.app.engine.audio.volume < 0.5), 'audio-focus duck lowers the volume');
-  await page.evaluate(() => window.LucielAndroidBridge.cmd('duck', 0));
+  const vol0 = await page.evaluate(() => window.Luciel.app.engine.out ? window.Luciel.app.engine.out.gain.value : window.Luciel.app.engine.audio.volume);
+  await page.evaluate(() => window.LucielAndroidBridge.cmd('duck', 1)); await page.waitForTimeout(250);
+  const vd = await page.evaluate(() => window.Luciel.app.engine.out ? window.Luciel.app.engine.out.gain.value : window.Luciel.app.engine.audio.volume);
+  ok(vd < vol0 * 0.5, `audio-focus duck lowers the output (${vol0.toFixed(2)} -> ${vd.toFixed(2)})`);
+  await page.evaluate(() => window.LucielAndroidBridge.cmd('duck', 0)); await page.waitForTimeout(250);
+  const vu = await page.evaluate(() => window.Luciel.app.engine.out ? window.Luciel.app.engine.out.gain.value : window.Luciel.app.engine.audio.volume);
+  ok(Math.abs(vu - vol0) < 0.02, `un-duck restores the user's volume, not 100% (${vu.toFixed(2)})`);
   // BPM analysis for the playing lazy file
   await page.waitForFunction(() => { const c = window.Luciel.app.current; return c && c.bpmInfo; }, null, { timeout: 25000 }).catch(() => {});
   ok(await page.evaluate(() => { const c = window.Luciel.app.current; return !!(c && c.bpmInfo && c.bpmInfo.bpm > 40); }), 'BPM analysis ran for the playing phone song');
@@ -128,13 +132,14 @@ async function charOpacity(page, ms = 1500) {
   }
 
   // 7) settings sheet
-  await page.evaluate(() => document.getElementById('btnAndroid').click()); await page.waitForTimeout(400);
+  await page.evaluate(() => { window.LucielMobile.setTab('settings'); document.querySelector('#mSettings [data-go="__phone"]').click(); }); await page.waitForTimeout(400);
   ok(await page.evaluate(() => !document.getElementById('andOverlay').hidden), 'Phone & Spotify sheet opens');
   ok(await page.evaluate(() => /Lucielle Styles[^<]*<b class="and-ok">/.test(document.getElementById('andBody').innerHTML)), 'sheet lists the Styles pack as installed');
   await page.screenshot({ path: path.join(SHOTS, 'web-android-sheet.png') });
   await page.evaluate(() => { const c = document.querySelector('[data-p="spotifyOnly"]'); c.click(); });
-  ok(await page.evaluate(() => window.__prefs.spotifyOnly === 'true'), 'sheet toggles are saved natively (Spotify only)');
+  ok(await page.evaluate(() => window.__prefs.spotifyOnly === true), 'sheet toggles are saved natively (Spotify only)');
   await page.evaluate(() => window.LucielAndroidBridge.back()); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => window.LucielAndroidBridge.back() === true && window.LucielMobile.tab === 'player'), 'back from the Settings tab returns to Now Playing');
 
   // 8) outside player (Spotify) -> chip, then auto scene mode when Luciel is idle
   await page.evaluate(() => window.Luciel.app.engine.audio.pause());

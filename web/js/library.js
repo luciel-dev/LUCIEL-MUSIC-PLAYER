@@ -135,9 +135,9 @@
     async function loadPlaylists() {
       try { playlists = (await global.AeroStore.Playlists.all()) || []; } catch (e) { playlists = []; }
       playlists.sort((a, b) => a.created - b.created);
-      renderNav();
+      renderNav(); if (api.changed) api.changed('library');
     }
-    const persistPl = (p) => { p.updated = Date.now(); global.AeroStore.Playlists.put(p).catch((e) => console.warn('[library] playlist save', e)); };
+    const persistPl = (p) => { p.updated = Date.now(); global.AeroStore.Playlists.put(p).catch((e) => console.warn('[library] playlist save', e)); if (api.changed) api.changed('library'); };
     function createPlaylist(name, ids = []) {
       const p = { id: uid(), name: name || 'New playlist', ids: ids.slice(), created: Date.now(), updated: Date.now() };
       playlists.push(p); persistPl(p); renderNav(); return p;
@@ -148,7 +148,7 @@
       renderNav(); if (view.type === 'playlist' && view.key === pid) render();
     }
     function playlistTracks(p) { const byId = api.byId; return p.ids.map((id) => byId(id)).filter(Boolean); }
-    function deletePlaylist(p) { playlists = playlists.filter((x) => x !== p); global.AeroStore.Playlists.remove(p.id).catch(() => {}); go({ type: 'songs' }, true); }
+    function deletePlaylist(p) { playlists = playlists.filter((x) => x !== p); global.AeroStore.Playlists.remove(p.id).catch(() => {}); if (api.changed) api.changed('library'); if (view.type === 'playlist' && view.key === p.id) go({ type: 'songs' }, true); }
     function forgetTracks(ids) { for (const p of playlists) { const n = p.ids.length; p.ids = p.ids.filter((id) => !ids.has(id)); if (p.ids.length !== n) persistPl(p); } }
 
     // ---------- small modal prompt (no window.prompt: keeps headless runs and the skins consistent)
@@ -493,6 +493,7 @@
       open, close, toggle: () => (win.hidden ? open() : close()), isOpen: () => !win.hidden,
       refresh: () => { dirty = true; scheduleRender(); }, go, ask, addToPlaylist, createPlaylist, forgetTracks,
       get playlists() { return playlists; }, get view() { return view; }, groups, SMART, exportM3U, ctxMenu,
+      deletePlaylist, savePlaylist: persistPl, playlistTracks, importM3U: () => $('m3uInput').click(),
     };
   }
   global.LucielLibrary = { create, group, splitArtist, toM3U, parseM3U, matchM3U };

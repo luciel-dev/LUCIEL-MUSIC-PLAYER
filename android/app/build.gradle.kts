@@ -9,7 +9,7 @@ val ks = Properties().apply { val f = rootProject.file("keystore/keystore.proper
 // Copy the Luciel web app (aero-player) + the Android layer into assets/www before every build.
 val syncWeb by tasks.registering(Exec::class) {
     group = "luciel"
-    description = "Sync web assets from ../web (or LUCIEL_WEB) into app/src/main/assets/www"
+    description = "Sync web assets from /workspace/aero-player (or LUCIEL_WEB) into app/src/main/assets/www"
     workingDir = rootProject.projectDir
     commandLine("node", "tools/sync-web.js")
     inputs.dir(rootProject.file("web"))
@@ -27,8 +27,8 @@ android {
         applicationId = "com.luciel.player"
         minSdk = 26
         targetSdk = 37
-        versionCode = 2
-        versionName = "1.0.3"
+        versionCode = 3
+        versionName = "1.1.0"
     }
     signingConfigs {
         create("release") {

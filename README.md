@@ -105,6 +105,14 @@ echo "sdk.dir=/path/to/Android/Sdk" > local.properties
 ./gradlew assembleDebug                 # debug APK, no signing setup needed
 ./gradlew testDebugUnitTest             # unit tests
 ```
+Phone-layout web tests (Playwright + Chrome, mocked Android bridge, real audio):
+```bash
+python3 android/test-web/make-demo-media.py          # 20 tagged demo MP3s -> android/test-web/demo-media (needs ffmpeg + Pillow)
+node android/test-web/phone.js                        # 360x780 + 412x915: drill-down, back, safe areas, sheets, audio audit
+node android/test-web/smoke.js                        # Android bridge smoke test
+```
+Debug builds only: `adb shell am broadcast -a com.luciel.player.DEBUG_FLOATER -p com.luciel.player.debug --es palette red --es skin classic --es mode large --es cmd popout`
+feeds a fake track into the floating mini player (for emulators whose WebView can't run the page).
 A Gradle task runs `tools/sync-web.js` before every build: it copies `../web` into `app/src/main/assets/www`, applies the
 Android patches and bundles `../packs/dist/lucielle-styles-pack.zip` if it exists (`LUCIEL_PACKS` to override).
 
