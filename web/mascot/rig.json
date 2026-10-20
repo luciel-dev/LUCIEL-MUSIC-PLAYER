@@ -1,0 +1,708 @@
+{
+ "idle": {
+  "size": 512,
+  "bbox": [
+   78.5,
+   14.5,
+   434.0,
+   493.5
+  ],
+  "halo": {
+   "x": 254.3,
+   "y": 42.9,
+   "rx": 81.8,
+   "ry": 29.5
+  },
+  "layers": {
+   "body": "mascot/rig/idle-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/idle-wingL.webp",
+     "box": [
+      77.5,
+      266.0,
+      168.5,
+      367.5
+     ],
+     "pivot": [
+      161.9,
+      297.3
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/idle-wingR.webp",
+     "box": [
+      325.5,
+      265.0,
+      435.5,
+      366.5
+     ],
+     "pivot": [
+      331.5,
+      307.1
+     ]
+    }
+   ]
+  }
+ },
+ "angry": {
+  "size": 512,
+  "bbox": [
+   43.0,
+   14.5,
+   471.5,
+   495.0
+  ],
+  "halo": {
+   "x": 254.7,
+   "y": 42.7,
+   "rx": 81.8,
+   "ry": 29.8
+  },
+  "layers": {
+   "body": "mascot/rig/angry-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/angry-wingL.webp",
+     "box": [
+      41.0,
+      228.5,
+      170.5,
+      341.5
+     ],
+     "pivot": [
+      163.1,
+      287.9
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/angry-wingR.webp",
+     "box": [
+      328.0,
+      228.5,
+      473.5,
+      341.0
+     ],
+     "pivot": [
+      335.8,
+      291.3
+     ]
+    }
+   ]
+  }
+ },
+ "bored": {
+  "size": 512,
+  "bbox": [
+   88.0,
+   16.0,
+   437.5,
+   491.5
+  ],
+  "halo": {
+   "x": 252.6,
+   "y": 44.5,
+   "rx": 81.5,
+   "ry": 29.8
+  },
+  "layers": {
+   "body": "mascot/rig/bored-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/bored-wingL.webp",
+     "box": [
+      87.0,
+      265.5,
+      171.0,
+      369.0
+     ],
+     "pivot": [
+      165.1,
+      292.6
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/bored-wingR.webp",
+     "box": [
+      331.0,
+      261.5,
+      439.0,
+      365.5
+     ],
+     "pivot": [
+      340.1,
+      301.3
+     ]
+    }
+   ]
+  }
+ },
+ "cloud": {
+  "size": 512,
+  "bbox": [
+   51.0,
+   14.5,
+   461.5,
+   498.0
+  ],
+  "halo": {
+   "x": 260.1,
+   "y": 42.6,
+   "rx": 79.2,
+   "ry": 29.0
+  },
+  "layers": {
+   "body": "mascot/rig/cloud-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/cloud-wingL.webp",
+     "box": [
+      91.5,
+      258.0,
+      213.5,
+      339.0
+     ],
+     "pivot": [
+      204.9,
+      293.0
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/cloud-wingR.webp",
+     "box": [
+      321.5,
+      248.5,
+      424.0,
+      344.0
+     ],
+     "pivot": [
+      328.1,
+      293.6
+     ]
+    }
+   ]
+  }
+ },
+ "cloud-sleep": {
+  "size": 512,
+  "bbox": [
+   37.5,
+   40.0,
+   487.5,
+   471.0
+  ],
+  "halo": {
+   "x": 159.5,
+   "y": 124.4,
+   "rx": 64.2,
+   "ry": 40.0
+  },
+  "layers": {
+   "body": "mascot/rig/cloud-sleep-body.webp",
+   "wings": [
+    {
+     "side": "R",
+     "file": "mascot/rig/cloud-sleep-wingR.webp",
+     "box": [
+      309.0,
+      213.0,
+      419.5,
+      283.0
+     ],
+     "pivot": [
+      318.2,
+      246.0
+     ]
+    }
+   ]
+  }
+ },
+ "confused": {
+  "size": 512,
+  "bbox": [
+   90.0,
+   17.0,
+   435.5,
+   494.5
+  ],
+  "halo": {
+   "x": 218.9,
+   "y": 71.4,
+   "rx": 71.5,
+   "ry": 30.5
+  },
+  "layers": {
+   "body": "mascot/rig/confused-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/confused-wingL.webp",
+     "box": [
+      92.0,
+      271.0,
+      175.0,
+      370.0
+     ],
+     "pivot": [
+      169.6,
+      300.4
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/confused-wingR.webp",
+     "box": [
+      323.0,
+      262.5,
+      431.5,
+      360.0
+     ],
+     "pivot": [
+      329.2,
+      304.3
+     ]
+    }
+   ]
+  }
+ },
+ "crying": {
+  "size": 512,
+  "bbox": [
+   80.0,
+   14.5,
+   435.5,
+   493.5
+  ],
+  "halo": {
+   "x": 254.8,
+   "y": 43.1,
+   "rx": 82.0,
+   "ry": 30.0
+  },
+  "layers": {
+   "body": "mascot/rig/crying-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/crying-wingL.webp",
+     "box": [
+      79.5,
+      267.0,
+      177.0,
+      367.5
+     ],
+     "pivot": [
+      169.6,
+      324.2
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/crying-wingR.webp",
+     "box": [
+      318.0,
+      264.5,
+      436.0,
+      366.5
+     ],
+     "pivot": [
+      323.1,
+      328.8
+     ]
+    }
+   ]
+  }
+ },
+ "flying": {
+  "size": 512,
+  "bbox": [
+   32.5,
+   22.0,
+   488.0,
+   464.5
+  ],
+  "halo": {
+   "x": 230.1,
+   "y": 48.8,
+   "rx": 77.0,
+   "ry": 28.5
+  },
+  "layers": {
+   "body": "mascot/rig/flying-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/flying-wingL.webp",
+     "box": [
+      32.5,
+      205.5,
+      158.5,
+      263.0
+     ],
+     "pivot": [
+      147.8,
+      244.4
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/flying-wingR.webp",
+     "box": [
+      310.0,
+      207.5,
+      452.5,
+      293.0
+     ],
+     "pivot": [
+      321.3,
+      246.8
+     ]
+    }
+   ]
+  }
+ },
+ "happy": {
+  "size": 512,
+  "bbox": [
+   50.0,
+   13.0,
+   467.0,
+   493.5
+  ],
+  "halo": {
+   "x": 261.3,
+   "y": 40.4,
+   "rx": 80.2,
+   "ry": 29.0
+  },
+  "layers": {
+   "body": "mascot/rig/happy-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/happy-wingL.webp",
+     "box": [
+      57.5,
+      247.5,
+      159.5,
+      338.0
+     ],
+     "pivot": [
+      150.7,
+      277.6
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/happy-wingR.webp",
+     "box": [
+      317.0,
+      249.5,
+      459.0,
+      341.0
+     ],
+     "pivot": [
+      322.5,
+      293.3
+     ]
+    }
+   ]
+  }
+ },
+ "love": {
+  "size": 512,
+  "bbox": [
+   78.5,
+   14.0,
+   434.0,
+   496.0
+  ],
+  "halo": {
+   "x": 254.6,
+   "y": 42.2,
+   "rx": 81.8,
+   "ry": 29.8
+  },
+  "layers": {
+   "body": "mascot/rig/love-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/love-wingL.webp",
+     "box": [
+      78.0,
+      267.0,
+      168.5,
+      368.0
+     ],
+     "pivot": [
+      162.0,
+      298.5
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/love-wingR.webp",
+     "box": [
+      320.5,
+      265.5,
+      435.5,
+      368.0
+     ],
+     "pivot": [
+      326.7,
+      321.6
+     ]
+    }
+   ]
+  }
+ },
+ "music": {
+  "size": 512,
+  "bbox": [
+   76.5,
+   14.5,
+   445.5,
+   493.5
+  ],
+  "halo": {
+   "x": 253.9,
+   "y": 43.3,
+   "rx": 81.2,
+   "ry": 29.5
+  },
+  "layers": {
+   "body": "mascot/rig/music-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/music-wingL.webp",
+     "box": [
+      77.0,
+      262.5,
+      171.0,
+      364.5
+     ],
+     "pivot": [
+      163.2,
+      321.1
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/music-wingR.webp",
+     "box": [
+      329.5,
+      259.5,
+      439.5,
+      361.0
+     ],
+     "pivot": [
+      335.7,
+      302.5
+     ]
+    }
+   ]
+  }
+ },
+ "shy": {
+  "size": 512,
+  "bbox": [
+   84.0,
+   14.0,
+   431.5,
+   495.0
+  ],
+  "halo": {
+   "x": 254.7,
+   "y": 42.6,
+   "rx": 81.8,
+   "ry": 29.8
+  },
+  "layers": {
+   "body": "mascot/rig/shy-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/shy-wingL.webp",
+     "box": [
+      83.5,
+      267.0,
+      169.5,
+      368.0
+     ],
+     "pivot": [
+      163.1,
+      294.9
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/shy-wingR.webp",
+     "box": [
+      321.5,
+      266.5,
+      429.5,
+      368.0
+     ],
+     "pivot": [
+      327.4,
+      319.6
+     ]
+    }
+   ]
+  }
+ },
+ "sleepy": {
+  "size": 512,
+  "bbox": [
+   82.5,
+   16.5,
+   455.0,
+   493.5
+  ],
+  "halo": {
+   "x": 246.1,
+   "y": 44.8,
+   "rx": 80.8,
+   "ry": 29.8
+  },
+  "layers": {
+   "body": "mascot/rig/sleepy-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/sleepy-wingL.webp",
+     "box": [
+      81.5,
+      264.5,
+      172.0,
+      366.5
+     ],
+     "pivot": [
+      164.0,
+      314.9
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/sleepy-wingR.webp",
+     "box": [
+      326.0,
+      260.5,
+      436.0,
+      363.5
+     ],
+     "pivot": [
+      332.9,
+      301.7
+     ]
+    }
+   ]
+  }
+ },
+ "smug": {
+  "size": 512,
+  "bbox": [
+   81.5,
+   15.0,
+   436.5,
+   493.5
+  ],
+  "halo": {
+   "x": 247.0,
+   "y": 43.9,
+   "rx": 81.8,
+   "ry": 30.2
+  },
+  "layers": {
+   "body": "mascot/rig/smug-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/smug-wingL.webp",
+     "box": [
+      81.0,
+      259.5,
+      171.5,
+      362.5
+     ],
+     "pivot": [
+      165.0,
+      293.1
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/smug-wingR.webp",
+     "box": [
+      325.0,
+      259.0,
+      438.0,
+      361.5
+     ],
+     "pivot": [
+      332.0,
+      301.2
+     ]
+    }
+   ]
+  }
+ },
+ "surprised": {
+  "size": 512,
+  "bbox": [
+   73.0,
+   13.5,
+   441.5,
+   493.5
+  ],
+  "halo": {
+   "x": 257.2,
+   "y": 37.6,
+   "rx": 76.5,
+   "ry": 25.8
+  },
+  "layers": {
+   "body": "mascot/rig/surprised-body.webp",
+   "wings": [
+    {
+     "side": "L",
+     "file": "mascot/rig/surprised-wingL.webp",
+     "box": [
+      72.0,
+      251.0,
+      170.0,
+      350.5
+     ],
+     "pivot": [
+      162.6,
+      288.6
+     ]
+    },
+    {
+     "side": "R",
+     "file": "mascot/rig/surprised-wingR.webp",
+     "box": [
+      340.0,
+      250.5,
+      443.0,
+      351.0
+     ],
+     "pivot": [
+      345.4,
+      293.8
+     ]
+    }
+   ]
+  }
+ }
+}

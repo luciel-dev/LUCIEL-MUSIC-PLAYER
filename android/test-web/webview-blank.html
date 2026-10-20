@@ -1,0 +1,4 @@
+<!doctype html><meta name="viewport" content="width=device-width"><body style="background:#123;color:#fff;font:20px sans-serif">
+<h1>WebView OK</h1><p id="t"></p><canvas id="c" width="300" height="150"></canvas>
+<script>let n=0;setInterval(()=>{document.getElementById('t').textContent='tick '+(++n)+' · '+navigator.userAgent.slice(-60);console.log('tick',n)},1000);
+const g=document.getElementById('c').getContext('2d');(function f(){g.fillStyle='hsl('+(Date.now()/10%360)+',80%,60%)';g.fillRect(0,0,300,150);requestAnimationFrame(f)})();</script>

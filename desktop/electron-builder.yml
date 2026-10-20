@@ -1,0 +1,57 @@
+appId: com.pj.luciel
+productName: Luciel
+copyright: "© 2026 pj"
+directories:
+  output: dist
+  buildResources: build
+files:
+  - main.js
+  - preload.js
+  - preload-mini.js
+  - package.json
+  - assets/**
+  - app/**
+  - "!**/*.map"
+asar: true
+compression: maximum
+electronLanguages: [en-US]
+electronVersion: 44.9.0
+fileAssociations:
+  - ext: [mp3, flac, ogg, opus, m4a, aac, wav, webm]
+    name: Luciel.Audio
+    description: Audio file (Luciel)
+    role: Viewer
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  executableName: Luciel
+  legalTrademarks: Luciel
+  signAndEditExecutable: true
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: false
+  include: build/installer.nsh
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Luciel
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  uninstallDisplayName: Luciel
+  artifactName: Luciel-Setup-${version}-x64.${ext}
+  deleteAppDataOnUninstall: false
+portable:
+  artifactName: Luciel-Portable-${version}-x64.${ext}
+linux:
+  target: [dir]
+  icon: build/icon.png
+  category: Audio
+mac:
+  icon: build/icon.png
+  category: public.app-category.music
+  target: [zip]

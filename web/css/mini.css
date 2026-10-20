@@ -1,0 +1,152 @@
+/* Luciel mini player ("floater") — Aero glass + Classic pixel looks, all four palettes (vars from css/palettes.css). */
+@font-face { font-family: 'Selawik'; src: url(../fonts/selawk.ttf) format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Selawik'; src: url(../fonts/selawksb.ttf) format('truetype'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Silkscreen'; src: url(../fonts/Silkscreen-Regular.ttf) format('truetype'); font-display: swap; }
+@font-face { font-family: 'VT323'; src: url(../fonts/VT323-Regular.ttf) format('truetype'); font-display: swap; }
+@font-face { font-family: 'DSEG7'; src: url(../fonts/DSEG7Classic-Bold.woff2) format('woff2'); font-display: swap; }
+
+/* ---------- hosts */
+html.mini-window, html.mini-window body { margin: 0; height: 100%; overflow: hidden; background: #0b1530; }
+html.mini-window body { user-select: none; }
+.mini-host { position: fixed; z-index: 70; right: 22px; bottom: 22px; width: 340px; height: 120px; min-width: 260px; min-height: 96px; max-width: min(720px, calc(100vw - 8px)); max-height: min(560px, calc(100vh - 8px));
+  resize: both; overflow: hidden; border-radius: 14px; box-shadow: 0 18px 50px rgba(0,0,0,.45), 0 0 0 1px rgba(0,0,0,.25); }
+.mini-host[hidden] { display: none; }
+.mini-host[data-skin="classic"] { border-radius: 0; }
+html.mini-pip, html.mini-pip body { margin: 0; height: 100%; overflow: hidden; }
+
+/* ---------- component */
+.lm { --pulse: 0; position: relative; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden;
+  font: 13px/1.2 'Segoe UI', 'Selawik', system-ui, sans-serif; color: var(--text); -webkit-user-select: none; user-select: none; outline: none; }
+.lm *, .lm *::before, .lm *::after { box-sizing: border-box; }
+.lm button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; }
+.lm button[hidden] { display: none; }
+.lm svg { width: 100%; height: 100%; fill: currentColor; display: block; }
+/* Desktop floater window dragging. NEVER make a container of controls a drag region and "punch out" the controls with
+   no-drag: Chromium turns app-region into rectangles merged in order (drag adds, no-drag subtracts) and its native hit test
+   answers "caption" for anything still covered, so the OS eats the click before the page sees it. Inherited drag on later
+   boxes (glass ::before/::after layers, title-bar stripes, overflowing text) re-covered the holes: in 1.0.1 that swallowed
+   the floater's controls on Windows. Also never write `app-region: none` — it computes to no-drag and punches holes.
+   Rules: only the explicit leaf grips below are `drag` (they contain no controls and overlap none); controls are `no-drag`;
+   everything else is left at the default. Verified with real OS clicks by luciel-desktop/test/real-input-test.js. */
+.lm-grip { display: none; }
+.lm[data-kind="window"] .lm-grip { display: block; position: absolute; -webkit-app-region: drag; app-region: drag; }
+.lm[data-kind="window"] .lm-text { position: relative; }
+.lm[data-kind="window"] .lm-grip-text { z-index: 2; left: 0; top: 0; bottom: 0; right: 0; }
+.lm[data-kind="window"][data-skin="aero"]:not(.large) .lm-grip-text { right: 92px; }      /* stop short of the window buttons */
+.lm[data-kind="window"][data-skin="classic"] .lm-tb-title { overflow: hidden; -webkit-app-region: drag; app-region: drag; }   /* Winamp-style title strip */
+.lm[data-kind="window"] :is(button, input, .lm-art, .lm-range, .lm-wbtns) { -webkit-app-region: no-drag; app-region: no-drag; }
+.lm[data-kind="overlay"] { cursor: grab; } .lm.dragging { cursor: grabbing; }
+
+.lm-tb { display: flex; align-items: center; flex: none; }
+.lm-tb-title { display: none; }
+.lm-wbtns { display: flex; gap: 4px; }
+.lm-body { flex: 1; min-height: 0; display: flex; gap: 10px; padding: 8px; }
+.lm-art { position: relative; flex: none; height: 100%; aspect-ratio: 1 / 1; overflow: hidden; cursor: pointer; }
+.lm-scene { position: absolute; inset: 0; background: center / cover no-repeat; transform: scale(calc(1.04 + var(--pulse) * .03)); }
+.lm-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lm-cover[hidden] { display: none; }
+.lm-luc { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lm-shine { position: absolute; inset: 0; pointer-events: none; }
+.lm-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+.lm-text { min-width: 0; padding-right: 92px; }
+.lm-title { overflow: hidden; white-space: nowrap; font-weight: 600; font-size: 14px; line-height: 18px; }
+.lm-title-in { display: inline-block; }
+.lm-title.scroll .lm-title-in { animation: lm-marq var(--dur, 10s) ease-in-out 1.2s infinite alternate; }
+@keyframes lm-marq { 0%, 12% { transform: translateX(0); } 88%, 100% { transform: translateX(var(--over)); } }
+.lm-artist { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; line-height: 16px; color: var(--text-2); }
+.lm-seek { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.lm-cur, .lm-dur { flex: none; min-width: 28px; }
+.lm-dur { text-align: right; }
+.lm-range { --p: 0; position: relative; flex: 1; height: 14px; display: flex; align-items: center; }
+.lm-range input { position: relative; z-index: 2; width: 100%; height: 14px; margin: 0; background: none; -webkit-appearance: none; appearance: none; cursor: pointer; }
+.lm-range input::-webkit-slider-runnable-track { height: 14px; background: none; }
+.lm-range input::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: 1px; border-radius: 50%; }
+.lm-range::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 5px; margin-top: -2.5px; border-radius: 3px; background: var(--track); box-shadow: inset 0 1px 2px rgba(0,0,0,.25); }
+.lm-fill { position: absolute; left: 0; top: 50%; height: 5px; margin-top: -2.5px; width: calc(var(--p) * 1%); border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 6px var(--accent-glow); pointer-events: none; }
+.lm-ctl { display: flex; align-items: center; gap: 6px; }
+.lm-b { position: relative; display: grid; place-items: center; flex: none; }
+.lm-prev, .lm-next { width: 30px; height: 24px; }
+.lm-prev svg, .lm-next svg { width: 14px; height: 14px; position: relative; z-index: 1; }
+.lm-wing { position: absolute; top: 50%; width: 15px; margin-top: -9px; pointer-events: none; opacity: .9; transition: transform .2s; }
+.lm-wing.l { left: -9px; transform-origin: right center; } .lm-wing.r { right: -9px; transform-origin: left center; }
+.lm.playing .lm-wing.l { transform: rotate(calc(var(--pulse) * 18deg)); } .lm.playing .lm-wing.r { transform: rotate(calc(var(--pulse) * -18deg)); }
+.lm-play { width: 34px; height: 34px; margin: 0 4px; }
+.lm-play svg { width: 15px; height: 15px; position: relative; z-index: 1; }
+.lm-play .ic-pause, .lm.playing .lm-play .ic-play { display: none; } .lm.playing .lm-play .ic-pause { display: block; }
+.lm-halo { position: absolute; left: 50%; top: -6px; width: 24px; height: 7px; margin-left: -12px; border-radius: 50%; border: 2px solid #ffd96a; box-shadow: 0 0 calc(4px + var(--pulse) * 8px) #ffd96a; opacity: .85; pointer-events: none; z-index: 2; }
+.lm-vol { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; margin-left: 8px; }
+.lm-mute { width: 20px; height: 20px; color: var(--text-2); } .lm-mute svg { width: 16px; height: 16px; }
+.lm-mute .ic-mute, .lm.muted .lm-mute .ic-vol { display: none; } .lm.muted .lm-mute .ic-mute { display: block; }
+.lm-volbar { min-width: 30px; }
+
+/* big layout: art on top (cover + dancing Lucielle), controls below */
+.lm.large .lm-body { flex-direction: column; gap: 8px; }
+.lm.large .lm-art { width: 100%; height: auto; flex: 1 1 auto; min-height: 0; aspect-ratio: auto; }
+.lm.large .lm-main { flex: none; gap: 6px; }
+.lm.large .lm-text { padding-right: 0; }
+.lm.large .lm-tb { position: absolute; z-index: 5; }
+.lm.narrow .lm-volbar { display: none; }
+
+/* ================= AERO: glass ================= */
+.lm[data-skin="aero"] { background: radial-gradient(120% 120% at 0% 0%, var(--bg-1), transparent 60%), linear-gradient(160deg, var(--bg-1), var(--bg-2) 55%, var(--bg-3)); border-radius: inherit; }
+.lm[data-skin="aero"]::before { content: ''; position: absolute; inset: 3px; border-radius: 11px; background: var(--glass); border: 1px solid var(--glass-border); box-shadow: inset 0 1px 0 var(--sheen), 0 4px 18px rgba(0,0,0,.18); pointer-events: none; }
+.lm[data-skin="aero"]::after { content: ''; position: absolute; left: 4px; right: 4px; top: 4px; height: 44%; border-radius: 10px 10px 50% 50% / 10px 10px 18px 18px; background: linear-gradient(rgba(255,255,255,.32), rgba(255,255,255,0)); pointer-events: none; }
+.lm[data-skin="aero"][data-kind="window"]::before { border-radius: 9px; }
+.lm[data-skin="aero"] .lm-body { position: relative; z-index: 1; padding: 10px; }
+.lm[data-skin="aero"] .lm-tb { position: absolute; z-index: 5; top: 9px; right: 10px; }
+.lm[data-skin="aero"] .lm-wb { width: 19px; height: 19px; padding: 4px; border-radius: 50%; color: var(--btn-ink);
+  background: linear-gradient(180deg, var(--btn-1), var(--btn-2) 50%, var(--btn-3)); border: 1px solid var(--btn-border); box-shadow: inset 0 1px 0 var(--sheen), 0 1px 3px rgba(0,0,0,.2); }
+.lm[data-skin="aero"] .lm-wb:hover { box-shadow: 0 0 8px var(--accent-glow), inset 0 1px 0 var(--sheen); }
+.lm[data-skin="aero"] .lm-wb.on { color: #fff; background: linear-gradient(180deg, var(--accent-2), var(--accent)); }
+.lm[data-skin="aero"] .lm-x:hover { color: #fff; background: linear-gradient(180deg, #ff8f8f, #d8303a); }
+.lm[data-skin="aero"] .lm-art { border-radius: 10px; border: 1px solid var(--glass-border); box-shadow: 0 4px 14px rgba(0,0,0,.28), 0 0 calc(var(--pulse) * 14px) var(--accent-glow); background: var(--viz-bg); }
+.lm[data-skin="aero"] .lm-shine { border-radius: 9px; background: linear-gradient(160deg, rgba(255,255,255,.45) 0%, rgba(255,255,255,.08) 38%, transparent 40%); }
+.lm[data-skin="aero"] .lm-range input::-webkit-slider-thumb { background: radial-gradient(circle at 50% 30%, #fff, var(--orb-1) 40%, var(--orb-2)); box-shadow: 0 0 0 1px var(--btn-border), 0 1px 4px rgba(0,0,0,.35); }
+.lm[data-skin="aero"] :is(.lm-prev, .lm-next) { border-radius: 12px; color: var(--btn-ink); background: linear-gradient(180deg, var(--btn-1), var(--btn-2) 48%, var(--btn-3) 52%, var(--btn-4)); border: 1px solid var(--btn-border); box-shadow: inset 0 1px 0 var(--sheen), 0 2px 5px rgba(0,0,0,.2); }
+.lm[data-skin="aero"] .lm-play { border-radius: 50%; color: var(--orb-ink); background: radial-gradient(circle at 50% 28%, var(--orb-1) 0%, var(--orb-2) 55%, var(--orb-3) 100%);
+  box-shadow: 0 0 calc(6px + var(--pulse) * 12px) var(--accent-glow), inset 0 -3px 6px rgba(0,0,0,.25), 0 2px 6px rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.55); }
+.lm[data-skin="aero"] .lm-play::after { content: ''; position: absolute; left: 6px; right: 6px; top: 2px; height: 45%; border-radius: 50%; background: linear-gradient(rgba(255,255,255,.75), rgba(255,255,255,.05)); pointer-events: none; }
+.lm[data-skin="aero"] :is(.lm-b, .lm-wb):active { transform: translateY(1px); filter: brightness(.95); }
+.lm[data-skin="aero"] .lm-title { text-shadow: 0 1px 0 var(--sheen-2); }
+.lm[data-skin="aero"].large .lm-tb { top: 15px; right: 16px; }
+.lm[data-skin="aero"].large .lm-wb { background: rgba(0,0,0,.35); color: #fff; border-color: rgba(255,255,255,.4); }
+
+/* ================= CLASSIC: Winamp-style pixel ================= */
+.lm[data-skin="classic"] { --bevel-out: inset 1px 1px 0 rgba(255,255,255,.38), inset -1px -1px 0 rgba(0,0,0,.45); --bevel-in: inset 1px 1px 0 rgba(0,0,0,.65), inset -1px -1px 0 rgba(255,255,255,.22);
+  font-family: 'Silkscreen', 'VT323', monospace; -webkit-font-smoothing: none; image-rendering: pixelated; color: var(--c-btn-ink);
+  background: repeating-linear-gradient(180deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px), linear-gradient(180deg, var(--c-frame-1) 0%, var(--c-frame-2) 38%, var(--c-frame-3) 100%);
+  border: 2px solid; border-color: var(--c-frame-1) var(--c-frame-dark) var(--c-frame-dark) var(--c-frame-1); box-shadow: 0 0 0 1px var(--c-frame-dark); }
+.lm[data-skin="classic"] .lm-tb { height: 16px; padding: 0 3px 0 4px; gap: 6px; background: linear-gradient(180deg, var(--c-title-1), var(--c-title-2)); border-bottom: 1px solid var(--c-frame-dark); }
+.lm[data-skin="classic"] .lm-tb-title { display: flex; flex: 1; align-items: center; gap: 6px; min-width: 0; font-size: 8px; letter-spacing: 2px; color: var(--c-title-ink); white-space: nowrap; }
+.lm[data-skin="classic"] .lm-tb-title::after { content: ''; flex: 1; height: 8px; background: repeating-linear-gradient(180deg, var(--c-stripe) 0 2px, transparent 2px 4px); }
+.lm-tb-icon { width: 12px; height: 12px; }
+.lm[data-skin="classic"] .lm-wbtns { gap: 2px; }
+.lm[data-skin="classic"] .lm-wb { width: 12px; height: 12px; padding: 1px; color: var(--c-btn-ink); background: linear-gradient(180deg, var(--c-btn-1), var(--c-btn-2)); border: 1px solid var(--c-frame-dark); box-shadow: var(--bevel-out); }
+.lm[data-skin="classic"] .lm-wb.on { background: var(--lcd-bg); color: var(--lcd-fg); box-shadow: var(--bevel-in); }
+.lm[data-skin="classic"] :is(.lm-wb, .lm-b):active { box-shadow: var(--bevel-in); }
+.lm[data-skin="classic"] .lm-body { padding: 5px 6px 6px; gap: 6px; }
+.lm[data-skin="classic"] .lm-art { background: var(--lcd-bg); box-shadow: var(--bevel-in), inset 0 0 14px rgba(0,0,0,.55); border: 1px solid var(--c-frame-dark); }
+.lm[data-skin="classic"] .lm-scene { opacity: .55; image-rendering: pixelated; transform: none; }
+.lm[data-skin="classic"] .lm-luc { image-rendering: pixelated; }
+.lm[data-skin="classic"] .lm-cover { image-rendering: auto; }
+.lm[data-skin="classic"] .lm-main { gap: 4px; }
+.lm[data-skin="classic"] .lm-text { padding: 3px 6px; background: var(--lcd-bg); box-shadow: var(--bevel-in), inset 0 0 10px rgba(0,0,0,.55); }
+.lm[data-skin="classic"] .lm-title { font: 9px/13px 'Silkscreen', monospace; text-transform: uppercase; letter-spacing: 1px; color: var(--lcd-fg); text-shadow: 0 0 5px var(--lcd-glow); }
+.lm[data-skin="classic"] .lm-artist { font: 15px/13px 'VT323', monospace; color: var(--lcd-fg); opacity: .75; }
+.lm[data-skin="classic"] .lm-seek { gap: 4px; font: 15px/1 'VT323', monospace; color: var(--c-btn-ink); }
+.lm[data-skin="classic"] .lm-cur { color: var(--lcd-fg); background: var(--lcd-bg); padding: 1px 3px; box-shadow: var(--bevel-in); text-shadow: 0 0 4px var(--lcd-glow); }
+.lm[data-skin="classic"] .lm-range { height: 12px; }
+.lm[data-skin="classic"] .lm-range input { height: 12px; }
+.lm[data-skin="classic"] .lm-range::before { height: 6px; margin-top: -3px; border-radius: 0; background: var(--lcd-bg); box-shadow: var(--bevel-in); }
+.lm[data-skin="classic"] .lm-fill { z-index: 3; height: 2px; margin-top: -1px; left: 2px; width: calc((100% - 16px) * var(--p) / 100); border-radius: 0; background: var(--lcd-fg); box-shadow: 0 0 4px var(--lcd-glow); }
+.lm[data-skin="classic"] .lm-volbar .lm-fill { height: 4px; margin-top: -2px; background: linear-gradient(90deg, var(--vol-1), var(--vol-2)); }
+.lm[data-skin="classic"] .lm-range input::-webkit-slider-thumb { width: 14px; height: 10px; margin-top: 2px; border-radius: 0; background: linear-gradient(180deg, var(--c-btn-1), var(--c-btn-2)); box-shadow: var(--bevel-out), 0 0 0 1px var(--c-frame-dark); }
+.lm[data-skin="classic"] .lm-ctl { gap: 2px; }
+.lm[data-skin="classic"] :is(.lm-prev, .lm-next, .lm-play, .lm-mute) { width: 26px; height: 20px; margin: 0; color: var(--c-btn-ink); background: linear-gradient(180deg, var(--c-btn-1), var(--c-btn-2)); border: 1px solid var(--c-frame-dark); box-shadow: var(--bevel-out); border-radius: 0; }
+.lm[data-skin="classic"] .lm-play { width: 30px; }
+.lm[data-skin="classic"] :is(.lm-prev, .lm-next, .lm-play) svg { width: 11px; height: 11px; }
+.lm[data-skin="classic"] .lm-mute svg { width: 13px; height: 13px; }
+.lm[data-skin="classic"] .lm-wing, .lm[data-skin="classic"] .lm-halo { display: none; }
+.lm[data-skin="classic"] .lm-play::before { content: ''; position: absolute; left: 50%; top: -5px; width: 14px; height: 4px; margin-left: -7px; background: url(../mascot/pixel/halo.png) center / contain no-repeat; image-rendering: pixelated; opacity: calc(.5 + var(--pulse) * .5); }
+.lm[data-skin="classic"] .lm-vol { margin-left: 4px; }
+.lm[data-skin="classic"].large .lm-tb { position: static; }

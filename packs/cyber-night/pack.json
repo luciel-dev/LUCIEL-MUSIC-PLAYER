@@ -1,0 +1,231 @@
+{
+  "format": "luciel-pack/1",
+  "id": "cyber-night",
+  "name": "Cyber Night",
+  "author": "pj",
+  "version": "1.0.0",
+  "description": "Neon Lucielle in a hologram city: a tempo-synced cyber video loop, a pixel-sorted synthwave horizon and a pixel rooftop for the Classic skin.",
+  "preview": "preview.jpg",
+  "scenes": [
+    {
+      "id": "cyber-night",
+      "name": "Cyber Night",
+      "thumb": "bg/cyber-night-thumb.jpg",
+      "background": {
+        "image": "bg/cyber-night.jpg",
+        "video": "bg/cyber-night.mp4",
+        "pixel": "bg/cyber-night-px.png",
+        "loopBpm": 120,
+        "tempoSync": true
+      },
+      "character": {
+        "use": "custom",
+        "name": "Neon Lucielle",
+        "tier": "auto",
+        "dance": {
+          "slow": {
+            "sheet": "dance/neon-slow.webp",
+            "frames": 73,
+            "columns": 9,
+            "beats": 11,
+            "loopBpm": 109.2
+          },
+          "mid": {
+            "sheet": "dance/neon-mid.webp",
+            "frames": 73,
+            "columns": 9,
+            "beats": 12,
+            "loopBpm": 119.2
+          },
+          "fast": {
+            "sheet": "dance/neon-fast.webp",
+            "frames": 73,
+            "columns": 9,
+            "beats": 16,
+            "loopBpm": 158.9
+          }
+        },
+        "idle": "emotes/idle.webp",
+        "emotes": {
+          "happy": "emotes/happy.webp",
+          "love": "emotes/love.webp",
+          "surprised": "emotes/surprised.webp",
+          "smug": "emotes/smug.webp",
+          "music": "emotes/music.webp"
+        }
+      },
+      "effects": [
+        {
+          "type": "cyber",
+          "intensity": 0.7
+        },
+        {
+          "type": "rgb-split",
+          "intensity": 0.45
+        },
+        {
+          "type": "scanlines",
+          "intensity": 0.35
+        }
+      ],
+      "particles": [
+        "stars"
+      ],
+      "reactivity": {
+        "beatZoom": 1.5,
+        "bassGlow": 1.4,
+        "shake": 0.8,
+        "flash": 1.2,
+        "particles": 1,
+        "glowColor": "#29f6ff"
+      },
+      "match": {
+        "genres": [
+          "cyberpunk",
+          "darksynth",
+          "electro",
+          "night drive",
+          "midtempo",
+          "phonk"
+        ],
+        "moods": [
+          "dark",
+          "groove"
+        ],
+        "bpm": [
+          90,
+          150
+        ]
+      }
+    },
+    {
+      "id": "neon-glitch",
+      "name": "Neon Glitch",
+      "background": {
+        "image": "bg/neon-glitch.jpg",
+        "pixel": "bg/neon-glitch-px.png"
+      },
+      "character": {
+        "use": "lucielle",
+        "tier": "auto",
+        "scale": 0.95,
+        "poses": [
+          "music",
+          "smug"
+        ]
+      },
+      "effects": [
+        {
+          "type": "pixel-sort",
+          "intensity": 0.75
+        },
+        {
+          "type": "rgb-split",
+          "intensity": 0.3
+        },
+        {
+          "type": "scanlines",
+          "intensity": 0.2
+        }
+      ],
+      "particles": [
+        "grid",
+        "stars"
+      ],
+      "reactivity": {
+        "beatZoom": 1.2,
+        "bassGlow": 1.1,
+        "glowColor": "#ff4fd8"
+      },
+      "match": {
+        "genres": [
+          "vaporwave",
+          "retrowave",
+          "outrun",
+          "future funk",
+          "chillwave"
+        ],
+        "moods": [
+          "groove"
+        ]
+      }
+    },
+    {
+      "id": "rooftop-pixel",
+      "name": "Neon Rooftop (Pixel)",
+      "pixel": true,
+      "background": {
+        "image": "bg/rooftop-pixel.jpg",
+        "pixel": "bg/rooftop-pixel-px.png"
+      },
+      "character": {
+        "use": "custom",
+        "name": "Neon Lucielle",
+        "tier": "auto",
+        "dance": {
+          "slow": {
+            "sheet": "dance/neon-slow.webp",
+            "frames": 73,
+            "columns": 9,
+            "beats": 11,
+            "loopBpm": 109.2
+          },
+          "mid": {
+            "sheet": "dance/neon-mid.webp",
+            "frames": 73,
+            "columns": 9,
+            "beats": 12,
+            "loopBpm": 119.2
+          },
+          "fast": {
+            "sheet": "dance/neon-fast.webp",
+            "frames": 73,
+            "columns": 9,
+            "beats": 16,
+            "loopBpm": 158.9
+          }
+        },
+        "idle": "emotes/idle.webp",
+        "emotes": {
+          "happy": "emotes/happy.webp",
+          "love": "emotes/love.webp",
+          "surprised": "emotes/surprised.webp",
+          "smug": "emotes/smug.webp",
+          "music": "emotes/music.webp"
+        }
+      },
+      "effects": [
+        {
+          "type": "dither",
+          "intensity": 0.35
+        },
+        {
+          "type": "scanlines",
+          "intensity": 0.3
+        }
+      ],
+      "particles": [
+        "rain"
+      ],
+      "reactivity": {
+        "beatZoom": 0.8,
+        "bassGlow": 1.2,
+        "glowColor": "#5fe2ff"
+      },
+      "match": {
+        "genres": [
+          "cyberpunk",
+          "lofi night",
+          "darksynth"
+        ],
+        "moods": [
+          "chill",
+          "sad"
+        ],
+        "skins": [
+          "classic"
+        ]
+      }
+    }
+  ]
+}

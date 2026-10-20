@@ -1,0 +1,580 @@
+{
+ "version": 1,
+ "generated": true,
+ "scenes": [
+  {
+   "id": "aero-ambient",
+   "name": "Bubble Meadow",
+   "kind": "full",
+   "image": "art/aero-ambient.webp",
+   "thumb": "art/thumb/aero-ambient.webp",
+   "px": "art/px/aero-ambient.png",
+   "particles": [
+    "bubbles",
+    "sparkles"
+   ],
+   "palette": "aero",
+   "genres": [
+    "ambient",
+    "new age",
+    "chill",
+    "downtempo",
+    "meditative"
+   ],
+   "moods": [
+    "calm"
+   ],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": true
+  },
+  {
+   "id": "classical",
+   "name": "Cathedral Hall",
+   "kind": "layered",
+   "image": "art/classical.webp",
+   "thumb": "art/thumb/classical.webp",
+   "px": "art/px/classical.png",
+   "particles": [
+    "feathers",
+    "notes"
+   ],
+   "palette": null,
+   "genres": [
+    "classical",
+    "orchestra",
+    "baroque",
+    "opera",
+    "piano",
+    "instrumental",
+    "soundtrack"
+   ],
+   "moods": [
+    "calm"
+   ],
+   "poses": [
+    "idle",
+    "music",
+    "shy"
+   ],
+   "hasCharacter": false
+  },
+  {
+   "id": "hiphop",
+   "name": "Graffiti Street",
+   "kind": "layered",
+   "image": "art/hiphop.webp",
+   "thumb": "art/thumb/hiphop.webp",
+   "px": "art/px/hiphop.png",
+   "particles": [
+    "sparks"
+   ],
+   "palette": null,
+   "genres": [
+    "hip-hop",
+    "hip hop",
+    "rap",
+    "trap",
+    "r&b",
+    "gangsta"
+   ],
+   "moods": [
+    "groove"
+   ],
+   "poses": [
+    "smug",
+    "music"
+   ],
+   "hasCharacter": false
+  },
+  {
+   "id": "jazz",
+   "name": "Smoky Jazz Club",
+   "kind": "layered",
+   "image": "art/jazz.webp",
+   "thumb": "art/thumb/jazz.webp",
+   "px": "art/px/jazz.png",
+   "particles": [
+    "smoke",
+    "dust"
+   ],
+   "palette": null,
+   "genres": [
+    "jazz",
+    "blues",
+    "swing",
+    "soul",
+    "bossa"
+   ],
+   "moods": [
+    "chill"
+   ],
+   "poses": [
+    "music",
+    "smug",
+    "shy"
+   ],
+   "hasCharacter": false
+  },
+  {
+   "id": "mood-hype",
+   "name": "Hype Arena",
+   "kind": "layered",
+   "image": "art/mood-hype.webp",
+   "thumb": "art/thumb/mood-hype.webp",
+   "px": "art/px/mood-hype.png",
+   "particles": [
+    "confetti",
+    "embers"
+   ],
+   "palette": null,
+   "genres": [],
+   "moods": [
+    "hype"
+   ],
+   "poses": [
+    "happy",
+    "surprised"
+   ],
+   "hasCharacter": false,
+   "dance": "fast",
+   "energy": [
+    0.62,
+    1
+   ],
+   "bpm": [
+    124,
+    999
+   ]
+  },
+  {
+   "id": "mood-romantic",
+   "name": "Sunset Promenade",
+   "kind": "layered",
+   "image": "art/mood-romantic.webp",
+   "thumb": "art/thumb/mood-romantic.webp",
+   "px": "art/px/mood-romantic.png",
+   "particles": [
+    "petals",
+    "hearts"
+   ],
+   "palette": null,
+   "genres": [
+    "love",
+    "romance",
+    "romantic",
+    "love song"
+   ],
+   "moods": [
+    "romantic"
+   ],
+   "poses": [
+    "love",
+    "shy"
+   ],
+   "hasCharacter": false
+  },
+  {
+   "id": "mood-sad",
+   "name": "Rainy Window",
+   "kind": "layered",
+   "image": "art/mood-sad.webp",
+   "thumb": "art/thumb/mood-sad.webp",
+   "px": "art/px/mood-sad.png",
+   "particles": [
+    "rain"
+   ],
+   "palette": null,
+   "genres": [
+    "sad",
+    "emo",
+    "ballad"
+   ],
+   "moods": [
+    "sad"
+   ],
+   "poses": [
+    "crying",
+    "sleepy",
+    "cloud"
+   ],
+   "hasCharacter": false,
+   "energy": [
+    0,
+    0.28
+   ],
+   "bpm": [
+    0,
+    92
+   ]
+  },
+  {
+   "id": "mood-sleepy",
+   "name": "Dream Clouds",
+   "kind": "layered",
+   "image": "art/mood-sleepy.webp",
+   "thumb": "art/thumb/mood-sleepy.webp",
+   "px": "art/px/mood-sleepy.png",
+   "particles": [
+    "stars",
+    "zzz"
+   ],
+   "palette": null,
+   "genres": [
+    "sleep",
+    "lullaby"
+   ],
+   "moods": [
+    "sleepy"
+   ],
+   "poses": [
+    "sleepy",
+    "cloud-sleep",
+    "cloud"
+   ],
+   "hasCharacter": false,
+   "energy": [
+    0,
+    0.18
+   ],
+   "bpm": [
+    0,
+    80
+   ]
+  },
+  {
+   "id": "pop",
+   "name": "Idol Stage",
+   "kind": "layered",
+   "image": "art/pop.webp",
+   "thumb": "art/thumb/pop.webp",
+   "px": "art/px/pop.png",
+   "particles": [
+    "confetti",
+    "hearts"
+   ],
+   "palette": null,
+   "genres": [
+    "pop",
+    "j-pop",
+    "k-pop",
+    "dance pop",
+    "top 40",
+    "eurodance"
+   ],
+   "moods": [
+    "happy"
+   ],
+   "poses": [
+    "happy",
+    "music",
+    "love"
+   ],
+   "hasCharacter": false
+  },
+  {
+   "id": "synthwave",
+   "name": "Neon Horizon",
+   "kind": "layered",
+   "image": "art/synthwave.webp",
+   "thumb": "art/thumb/synthwave.webp",
+   "px": "art/px/synthwave.png",
+   "particles": [
+    "grid",
+    "stars"
+   ],
+   "palette": null,
+   "genres": [
+    "retrowave",
+    "outrun",
+    "synthpop",
+    "vaporwave",
+    "new wave",
+    "darkwave"
+   ],
+   "moods": [
+    "groove"
+   ],
+   "poses": [
+    "music",
+    "smug"
+   ],
+   "hasCharacter": false,
+   "coverGenres": [
+    "synthwave",
+    "cyberpunk",
+    "industrial",
+    "darksynth"
+   ]
+  },
+  {
+   "id": "blue-lofi",
+   "name": "Rainy Rooftop",
+   "kind": "full",
+   "image": "art/blue-lofi.webp",
+   "thumb": "art/thumb/blue-lofi.webp",
+   "px": "art/px/blue-lofi.png",
+   "particles": [
+    "rain"
+   ],
+   "palette": "blue",
+   "genres": [
+    "chillhop",
+    "study",
+    "jazzhop"
+   ],
+   "moods": [
+    "chill"
+   ],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": true,
+   "coverGenres": [
+    "lofi",
+    "lo-fi",
+    "chiptune",
+    "8-bit",
+    "8bit",
+    "bitpop"
+   ]
+  },
+  {
+   "id": "pixel-aero",
+   "name": "Pixel Aero",
+   "kind": "pixel",
+   "image": "art/pixel-aero.webp",
+   "thumb": "art/thumb/pixel-aero.webp",
+   "px": "art/px/pixel-aero.png",
+   "particles": [
+    "bubbles"
+   ],
+   "palette": "aero",
+   "genres": [],
+   "moods": [],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": false,
+   "skin": "classic"
+  },
+  {
+   "id": "pixel-blue",
+   "name": "Pixel Blue",
+   "kind": "pixel",
+   "image": "art/pixel-blue.webp",
+   "thumb": "art/thumb/pixel-blue.webp",
+   "px": "art/px/pixel-blue.png",
+   "particles": [
+    "rain",
+    "stars"
+   ],
+   "palette": "blue",
+   "genres": [],
+   "moods": [],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": false,
+   "skin": "classic"
+  },
+  {
+   "id": "pixel-red",
+   "name": "Pixel Red",
+   "kind": "pixel",
+   "image": "art/pixel-red.webp",
+   "thumb": "art/thumb/pixel-red.webp",
+   "px": "art/px/pixel-red.png",
+   "particles": [
+    "embers"
+   ],
+   "palette": "red",
+   "genres": [],
+   "moods": [],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": false,
+   "skin": "classic"
+  },
+  {
+   "id": "pixel-slime",
+   "name": "Pixel Slime",
+   "kind": "pixel",
+   "image": "art/pixel-slime.webp",
+   "thumb": "art/thumb/pixel-slime.webp",
+   "px": "art/px/pixel-slime.png",
+   "particles": [
+    "slime"
+   ],
+   "palette": "slime",
+   "genres": [],
+   "moods": [],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": false,
+   "skin": "classic"
+  },
+  {
+   "id": "red-rock",
+   "name": "Crimson Stage",
+   "kind": "full",
+   "image": "art/red-rock.webp",
+   "thumb": "art/thumb/red-rock.webp",
+   "px": "art/px/red-rock.png",
+   "particles": [
+    "embers"
+   ],
+   "palette": "red",
+   "genres": [
+    "rock",
+    "metal",
+    "punk",
+    "grunge",
+    "hard rock",
+    "alternative"
+   ],
+   "moods": [
+    "angry"
+   ],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": true
+  },
+  {
+   "id": "slime-rave",
+   "name": "Slime Rave",
+   "kind": "full",
+   "image": "art/slime-rave.webp",
+   "thumb": "art/thumb/slime-rave.webp",
+   "px": "art/px/slime-rave.png",
+   "particles": [
+    "slime",
+    "sparkles"
+   ],
+   "palette": "slime",
+   "genres": [
+    "edm",
+    "rave",
+    "dance",
+    "house",
+    "trance",
+    "dubstep"
+   ],
+   "moods": [
+    "hype"
+   ],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": true,
+   "coverGenres": [
+    "electronic",
+    "techno",
+    "glitch",
+    "idm"
+   ]
+  },
+  {
+   "id": "cyber",
+   "name": "Cyber Void",
+   "kind": "video",
+   "style": "cyber",
+   "image": "art/cyber.webp",
+   "thumb": "art/thumb/cyber.webp",
+   "px": "art/px/cyber.png",
+   "particles": [
+    "glyphs"
+   ],
+   "palette": null,
+   "genres": [
+    "synthwave",
+    "cyberpunk",
+    "industrial",
+    "darksynth",
+    "ebm",
+    "cyber"
+   ],
+   "moods": [
+    "groove"
+   ],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": false,
+   "dance": "auto",
+   "still": false,
+   "loopBpm": 120,
+   "video": "art/loops/cyber.mp4",
+   "loopDuration": 5.042
+  },
+  {
+   "id": "datamosh",
+   "name": "Datamosh",
+   "kind": "video",
+   "style": "datamosh",
+   "image": "art/datamosh.webp",
+   "thumb": "art/thumb/datamosh.webp",
+   "px": "art/px/datamosh.png",
+   "particles": [
+    "sparkles"
+   ],
+   "palette": null,
+   "genres": [
+    "electronic",
+    "techno",
+    "glitch",
+    "idm",
+    "breakcore",
+    "experimental"
+   ],
+   "moods": [
+    "hype"
+   ],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": false,
+   "dance": "auto",
+   "still": false,
+   "loopBpm": 120,
+   "video": "art/loops/datamosh.mp4",
+   "loopDuration": 5.042
+  },
+  {
+   "id": "dither",
+   "name": "Dither Moon",
+   "kind": "video",
+   "style": "dither",
+   "image": "art/dither.webp",
+   "thumb": "art/thumb/dither.webp",
+   "px": "art/px/dither.png",
+   "particles": [
+    "stars"
+   ],
+   "palette": null,
+   "genres": [
+    "chiptune",
+    "chiptunes",
+    "8-bit",
+    "8bit",
+    "bitpop",
+    "lo-fi",
+    "lofi"
+   ],
+   "moods": [
+    "chill"
+   ],
+   "poses": [
+    "music"
+   ],
+   "hasCharacter": false,
+   "dance": "auto",
+   "still": true,
+   "loopBpm": 120
+  }
+ ]
+}

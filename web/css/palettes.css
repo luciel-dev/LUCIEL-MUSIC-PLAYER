@@ -1,0 +1,118 @@
+/* ============ Color palettes (shared by both skins) ============ */
+
+/* (1) Frutiger Aero Grey — glossy silver glass, sky-blue highlights, bubbles */
+[data-palette="aero"] {
+  --sheen: rgba(255,255,255,.7); --sheen-2: rgba(255,255,255,.22); --scroll: rgba(40,80,120,.25);
+  --bg-1: #eef8ff; --bg-2: #b4d3ec; --bg-3: #6f9cc6;
+  --aurora-1: rgba(130,205,255,.6); --aurora-2: rgba(170,255,225,.42); --aurora-3: rgba(255,255,255,.75);
+  --swoosh-1: rgba(255,255,255,.45); --swoosh-2: rgba(150,210,255,.35); --swoosh-3: rgba(255,255,255,.5);
+  --bubble: rgba(255,255,255,.7); --bubble-edge: rgba(255,255,255,.85); --bubble-tint: rgba(110,190,255,.28);
+  --text: #12253a; --text-2: #3b5571; --text-3: #6782a0;
+  --accent: #1e94ee; --accent-2: #74ccff; --accent-ink: #fff; --accent-glow: rgba(56,165,255,.55);
+  --glass: linear-gradient(180deg, rgba(255,255,255,.78) 0%, rgba(233,241,248,.55) 48%, rgba(214,226,238,.5) 100%);
+  --glass-border: rgba(255,255,255,.95); --glass-edge: rgba(80,112,145,.35);
+  --glass-shadow: 0 24px 60px rgba(25,60,105,.32), 0 2px 8px rgba(25,60,105,.18);
+  --panel: rgba(255,255,255,.38); --panel-border: rgba(255,255,255,.8); --panel-shadow: inset 0 1px 2px rgba(30,60,100,.12);
+  --track: rgba(30,60,100,.16); --track-edge: rgba(30,60,100,.28);
+  --btn-1: #ffffff; --btn-2: #edf3f8; --btn-3: #cfdbe7; --btn-4: #e6eef5; --btn-ink: #23405f; --btn-border: rgba(75,105,135,.45);
+  --orb-1: #d2f0ff; --orb-2: #3aa6f4; --orb-3: #0a5aa8; --orb-ink: #fff;
+  --row-hover: rgba(255,255,255,.5); --row-sel: rgba(30,148,238,.16); --row-play: linear-gradient(90deg, rgba(30,148,238,.28), rgba(116,204,255,.08));
+  --viz-bg: radial-gradient(120% 140% at 50% 0%, #2a6aa6 0%, #143c66 45%, #0b2340 100%);
+  --viz-1: #1e8ff0; --viz-2: #62c8ff; --viz-3: #e4f7ff; --viz-peak: #ffffff; --viz-glow: rgba(80,180,255,.95); --viz-scope: #f2fbff; --viz-grid: rgba(255,255,255,.08);
+  --eq-line: #1e94ee; --eq-fill-1: rgba(30,148,238,.32); --eq-grid: rgba(30,60,100,.12);
+  /* classic */
+  --c-frame-1: #e6ecf2; --c-frame-2: #b9c6d3; --c-frame-3: #8797a9; --c-frame-dark: #46556a;
+  --c-title-1: #e9f5ff; --c-title-2: #8cbfe8; --c-title-ink: #0d2a4a; --c-stripe: rgba(40,90,140,.55);
+  --c-btn-1: #f4f8fb; --c-btn-2: #c8d4df; --c-btn-ink: #1d3550; --c-led: #39b2ff;
+  --lcd-bg: #07162a; --lcd-fg: #94dcff; --lcd-dim: #1e4566; --lcd-glow: rgba(120,210,255,.55);
+  --cviz-1: #1a7fd8; --cviz-2: #6fd0ff; --cviz-3: #ffffff; --cviz-peak: #cdeeff; --cviz-grid: #10273f;
+  --c-pl-bg: #07162a; --c-pl-fg: #8fd8ff; --c-pl-cur: #ffffff; --c-pl-sel: #1b4874;
+  --vol-1: #2a8be0; --vol-2: #9fe0ff;
+}
+
+/* (2) Dark Blue tones */
+[data-palette="blue"] {
+  --sheen: rgba(255,255,255,.16); --sheen-2: rgba(255,255,255,.05); --scroll: rgba(255,255,255,.14);
+  --bg-1: #12306e; --bg-2: #081634; --bg-3: #02060f;
+  --aurora-1: rgba(40,110,255,.38); --aurora-2: rgba(0,210,255,.22); --aurora-3: rgba(110,80,255,.22);
+  --swoosh-1: rgba(70,130,255,.12); --swoosh-2: rgba(0,200,255,.08); --swoosh-3: rgba(120,160,255,.1);
+  --bubble: rgba(120,190,255,.35); --bubble-edge: rgba(140,200,255,.45); --bubble-tint: rgba(40,140,255,.22);
+  --text: #e4eeff; --text-2: #a3b8de; --text-3: #6f86b0;
+  --accent: #3d8bff; --accent-2: #5fe2ff; --accent-ink: #fff; --accent-glow: rgba(60,150,255,.6);
+  --glass: linear-gradient(180deg, rgba(48,82,160,.5) 0%, rgba(16,32,74,.6) 50%, rgba(8,16,40,.7) 100%);
+  --glass-border: rgba(140,185,255,.28); --glass-edge: rgba(0,0,0,.5);
+  --glass-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.3), 0 0 40px rgba(40,110,255,.15);
+  --panel: rgba(4,12,32,.45); --panel-border: rgba(120,170,255,.16); --panel-shadow: inset 0 1px 3px rgba(0,0,0,.5);
+  --track: rgba(0,0,0,.45); --track-edge: rgba(120,170,255,.2);
+  --btn-1: #4a71c0; --btn-2: #2d4c92; --btn-3: #15295a; --btn-4: #1f3a78; --btn-ink: #e8f1ff; --btn-border: rgba(140,185,255,.35);
+  --orb-1: #b6f0ff; --orb-2: #2f80ff; --orb-3: #0a2470; --orb-ink: #fff;
+  --row-hover: rgba(90,140,255,.1); --row-sel: rgba(61,139,255,.2); --row-play: linear-gradient(90deg, rgba(61,139,255,.35), rgba(95,226,255,.06));
+  --viz-bg: radial-gradient(120% 140% at 50% 0%, #0d2457 0%, #050f2a 55%, #02060f 100%);
+  --viz-1: #1b4dff; --viz-2: #2fb6ff; --viz-3: #c4f4ff; --viz-peak: #ffffff; --viz-glow: rgba(50,160,255,.95); --viz-scope: #9ff0ff; --viz-grid: rgba(120,170,255,.08);
+  --eq-line: #5fe2ff; --eq-fill-1: rgba(61,139,255,.4); --eq-grid: rgba(120,170,255,.12);
+  --c-frame-1: #4a6296; --c-frame-2: #2a3d68; --c-frame-3: #18264a; --c-frame-dark: #050b1c;
+  --c-title-1: #5b80c8; --c-title-2: #1d3470; --c-title-ink: #e4eeff; --c-stripe: rgba(120,190,255,.55);
+  --c-btn-1: #5873aa; --c-btn-2: #263c6c; --c-btn-ink: #e4eeff; --c-led: #5fe2ff;
+  --lcd-bg: #010818; --lcd-fg: #5fe2ff; --lcd-dim: #0f2c55; --lcd-glow: rgba(95,226,255,.6);
+  --cviz-1: #1f48ff; --cviz-2: #33b8ff; --cviz-3: #e0fbff; --cviz-peak: #9ff0ff; --cviz-grid: #0a1838;
+  --c-pl-bg: #010818; --c-pl-fg: #5fb9ff; --c-pl-cur: #ffffff; --c-pl-sel: #12307a;
+  --vol-1: #1f48ff; --vol-2: #5fe2ff;
+}
+
+/* (3) Dark Red tones */
+[data-palette="red"] {
+  --sheen: rgba(255,255,255,.16); --sheen-2: rgba(255,255,255,.05); --scroll: rgba(255,255,255,.14);
+  --bg-1: #4a0912; --bg-2: #1a0408; --bg-3: #060102;
+  --aurora-1: rgba(255,30,60,.3); --aurora-2: rgba(255,110,50,.16); --aurora-3: rgba(170,0,60,.28);
+  --swoosh-1: rgba(255,60,80,.1); --swoosh-2: rgba(255,120,80,.06); --swoosh-3: rgba(200,20,50,.1);
+  --bubble: rgba(255,110,120,.3); --bubble-edge: rgba(255,140,150,.4); --bubble-tint: rgba(255,40,70,.2);
+  --text: #ffe7e9; --text-2: #dca6ab; --text-3: #a06b72;
+  --accent: #ff2d48; --accent-2: #ff8c5e; --accent-ink: #fff; --accent-glow: rgba(255,45,72,.6);
+  --glass: linear-gradient(180deg, rgba(120,24,36,.5) 0%, rgba(50,8,16,.62) 50%, rgba(24,4,8,.72) 100%);
+  --glass-border: rgba(255,130,140,.25); --glass-edge: rgba(0,0,0,.5);
+  --glass-shadow: 0 30px 70px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3), 0 0 40px rgba(255,30,60,.12);
+  --panel: rgba(20,2,6,.45); --panel-border: rgba(255,120,130,.14); --panel-shadow: inset 0 1px 3px rgba(0,0,0,.5);
+  --track: rgba(0,0,0,.5); --track-edge: rgba(255,120,130,.18);
+  --btn-1: #b3303f; --btn-2: #7a1522; --btn-3: #3e070f; --btn-4: #5e0f19; --btn-ink: #ffeef0; --btn-border: rgba(255,140,150,.3);
+  --orb-1: #ffc2b2; --orb-2: #ff2d48; --orb-3: #6a0410; --orb-ink: #fff;
+  --row-hover: rgba(255,80,100,.08); --row-sel: rgba(255,45,72,.18); --row-play: linear-gradient(90deg, rgba(255,45,72,.32), rgba(255,140,94,.05));
+  --viz-bg: radial-gradient(120% 140% at 50% 0%, #4a0812 0%, #1c0307 55%, #070102 100%);
+  --viz-1: #a8001a; --viz-2: #ff3048; --viz-3: #ffd0a8; --viz-peak: #fff1e6; --viz-glow: rgba(255,50,70,.95); --viz-scope: #ffb39a; --viz-grid: rgba(255,120,130,.07);
+  --eq-line: #ff5a5f; --eq-fill-1: rgba(255,45,72,.38); --eq-grid: rgba(255,120,130,.12);
+  --c-frame-1: #8a2a33; --c-frame-2: #561019; --c-frame-3: #320810; --c-frame-dark: #0d0103;
+  --c-title-1: #b23a45; --c-title-2: #4e0a14; --c-title-ink: #ffe7e9; --c-stripe: rgba(255,170,120,.55);
+  --c-btn-1: #a23a44; --c-btn-2: #4d0d16; --c-btn-ink: #ffe7e9; --c-led: #ff4d5e;
+  --lcd-bg: #120103; --lcd-fg: #ff4a5b; --lcd-dim: #3a0810; --lcd-glow: rgba(255,60,80,.6);
+  --cviz-1: #b0001c; --cviz-2: #ff3a4d; --cviz-3: #ffd28f; --cviz-peak: #ffb3a0; --cviz-grid: #280509;
+  --c-pl-bg: #120103; --c-pl-fg: #ff5d6b; --c-pl-cur: #fff1e6; --c-pl-sel: #5a0a16;
+  --vol-1: #b0001c; --vol-2: #ff8c5e;
+}
+
+/* (4) Slime Green — toxic neon green on dark */
+[data-palette="slime"] {
+  --sheen: rgba(255,255,255,.16); --sheen-2: rgba(255,255,255,.05); --scroll: rgba(255,255,255,.14);
+  --bg-1: #173f06; --bg-2: #071603; --bg-3: #010401;
+  --aurora-1: rgba(125,255,26,.22); --aurora-2: rgba(210,255,60,.13); --aurora-3: rgba(30,255,120,.15);
+  --swoosh-1: rgba(125,255,26,.09); --swoosh-2: rgba(200,255,60,.06); --swoosh-3: rgba(60,200,20,.1);
+  --bubble: rgba(150,255,60,.35); --bubble-edge: rgba(170,255,90,.5); --bubble-tint: rgba(110,255,20,.22);
+  --text: #eaffd6; --text-2: #addb8c; --text-3: #6f9a52;
+  --accent: #7dff1a; --accent-2: #d6ff3d; --accent-ink: #0b1d02; --accent-glow: rgba(125,255,26,.55);
+  --glass: linear-gradient(180deg, rgba(50,96,22,.48) 0%, rgba(16,36,7,.62) 50%, rgba(6,16,3,.74) 100%);
+  --glass-border: rgba(160,255,90,.25); --glass-edge: rgba(0,0,0,.5);
+  --glass-shadow: 0 30px 70px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.3), 0 0 46px rgba(125,255,26,.12);
+  --panel: rgba(2,10,1,.5); --panel-border: rgba(160,255,90,.14); --panel-shadow: inset 0 1px 3px rgba(0,0,0,.55);
+  --track: rgba(0,0,0,.5); --track-edge: rgba(160,255,90,.18);
+  --btn-1: #4d8f22; --btn-2: #275611; --btn-3: #0f2606; --btn-4: #1c420b; --btn-ink: #efffe0; --btn-border: rgba(170,255,90,.3);
+  --orb-1: #f0ffb8; --orb-2: #7dff1a; --orb-3: #1b6000; --orb-ink: #0b1d02;
+  --row-hover: rgba(125,255,26,.07); --row-sel: rgba(125,255,26,.15); --row-play: linear-gradient(90deg, rgba(125,255,26,.28), rgba(214,255,61,.04));
+  --viz-bg: radial-gradient(120% 140% at 50% 0%, #143a05 0%, #061402 55%, #010401 100%);
+  --viz-1: #1f9e00; --viz-2: #7dff1a; --viz-3: #f0ffa0; --viz-peak: #f6ffd0; --viz-glow: rgba(125,255,26,.95); --viz-scope: #c8ff5a; --viz-grid: rgba(160,255,90,.07);
+  --eq-line: #9dff2e; --eq-fill-1: rgba(125,255,26,.32); --eq-grid: rgba(160,255,90,.12);
+  --c-frame-1: #3f6326; --c-frame-2: #213a12; --c-frame-3: #122208; --c-frame-dark: #030801;
+  --c-title-1: #5a8e2e; --c-title-2: #1a3609; --c-title-ink: #eaffd6; --c-stripe: rgba(214,255,61,.55);
+  --c-btn-1: #4f7d2d; --c-btn-2: #1d3510; --c-btn-ink: #eaffd6; --c-led: #7dff1a;
+  --lcd-bg: #000800; --lcd-fg: #7dff1a; --lcd-dim: #0f3304; --lcd-glow: rgba(125,255,26,.6);
+  --cviz-1: #18a000; --cviz-2: #8cff20; --cviz-3: #ffef40; --cviz-peak: #e8ffb0; --cviz-grid: #062006;
+  --c-pl-bg: #000800; --c-pl-fg: #6fff12; --c-pl-cur: #ffffff; --c-pl-sel: #164a06;
+  --vol-1: #18a000; --vol-2: #d6ff3d;
+}

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luciel</title>
+<meta name="theme-color" content="#9fc6e8">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="icons/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/palettes.css">
+<link rel="stylesheet" href="css/skin-aero.css">
+<link rel="stylesheet" href="css/skin-classic.css">
+<link rel="stylesheet" href="css/luciel.css">
+<link rel="stylesheet" href="css/library.css">
+<link rel="stylesheet" href="css/mini.css">
+</head>
+<body class="skin-aero" data-palette="aero" data-skin="aero">
+
+<!-- SVG icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.4-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="5.5" y="4" width="4.6" height="16" rx="1.2"/><rect x="13.9" y="4" width="4.6" height="16" rx="1.2"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.6"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><rect x="4" y="5" width="3" height="14" rx="1"/><path d="M20 5.7v12.6a.8.8 0 0 1-1.22.68L8.6 12.68a.8.8 0 0 1 0-1.36l10.18-6.3A.8.8 0 0 1 20 5.7z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><rect x="17" y="5" width="3" height="14" rx="1"/><path d="M4 5.7v12.6a.8.8 0 0 0 1.22.68l10.18-6.3a.8.8 0 0 0 0-1.36L5.22 5.02A.8.8 0 0 0 4 5.7z"/></symbol>
+    <symbol id="i-eject" viewBox="0 0 24 24"><path d="M12 4.5 4.5 14h15z"/><rect x="4.5" y="16" width="15" height="3.2" rx="1"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 7h3.5c2 0 3.3 1 4.4 2.6l2.2 3.6C14.2 15 15.5 17 17.5 17H21M3 17h3.5c1.5 0 2.6-.6 3.5-1.6M14 8.6c.9-1 2-1.6 3.5-1.6H21M18 4l3 3-3 3M18 14l3 3-3 3"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M17 2.5 20.5 6 17 9.5M3.5 11V9.5A3.5 3.5 0 0 1 7 6h13.5M7 21.5 3.5 18 7 14.5M20.5 13v1.5A3.5 3.5 0 0 1 17 18H3.5"/></symbol>
+    <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.2h3.3L12 5v14l-4.7-4.2H4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.5 8.5a5 5 0 0 1 0 7M18.3 5.8a9 9 0 0 1 0 12.4"/></symbol>
+    <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.2h3.3L12 5v14l-4.7-4.2H4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m15.5 9.5 5 5m0-5-5 5"/></symbol>
+    <symbol id="i-eq" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 4v16M12 4v16M18 4v16"/></g><rect x="3.5" y="13" width="5" height="3" rx="1.2"/><rect x="9.5" y="7" width="5" height="3" rx="1.2"/><rect x="15.5" y="11" width="5" height="3" rx="1.2"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/></g><circle cx="4.5" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="4.5" cy="18" r="1.5"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5C21 6.5 17 3 12 3zm-5.5 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2.2h8.4A1.5 1.5 0 0 1 21 8.7v9.8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M9 3.5h6l.8 1.5H20v2H4V5h4.2zM5.5 8.5h13l-1 11.3a1.5 1.5 0 0 1-1.5 1.2H8a1.5 1.5 0 0 1-1.5-1.2z"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="m15.5 15.5 4.5 4.5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M7 4v16M3.5 16.5 7 20l3.5-3.5M14 6h7M14 12h5M14 18h3"/></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M19 3.5v11.8a3.2 3.2 0 1 1-2-3V7.6l-8 1.8v8.4a3.2 3.2 0 1 1-2-3V6.1z"/></symbol>
+    <symbol id="i-wing" viewBox="0 0 48 28"><path d="M47 4C38 2 30 4 24 9c-2-4-6-7-10-8 1 3 0 6-2 8-3-2-7-2-11-1 3 2 5 5 5 9-2 0-4 1-5 3 4 0 7 2 9 5 1-3 4-5 7-5 0 2 1 4 3 6 1-3 4-5 7-5 0 2 1 3 3 4 1-3 3-5 6-5 0 1 1 2 2 3 2-6 5-11 9-15z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.8 4.5c2.2 0 3.9 1.3 5.2 3 1.3-1.7 3-3 5.2-3 3.8 0 5.9 3.9 4.4 7.3C19.5 16.4 12 21 12 21z"/></symbol>
+    <symbol id="i-lib" viewBox="0 0 24 24"><path d="M4 4h3v16H4zM9 4h3v16H9zM14.2 4.6l2.9-.8 4.2 15.5-2.9.8z"/></symbol>
+    <symbol id="i-mini" viewBox="0 0 24 24"><ellipse cx="12" cy="3.6" rx="4.6" ry="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M1.2 12.5c1.6-.3 3 .3 3.8 1.6V9.6C3.6 9.2 2.1 10.3 1.2 12.5zM22.8 12.5c-1.6-.3-3 .3-3.8 1.6V9.6c1.4-.4 2.9.7 3.8 2.9z"/><rect x="5.5" y="7" width="13" height="12" rx="2.4" fill="none" stroke="currentColor" stroke-width="2"/><rect x="8" y="9.6" width="4.4" height="4.4" rx=".8"/><path d="M14 10.6h2.6M14 13h2.6M8 16.6h8.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-pack" viewBox="0 0 24 24"><path d="M12 2.5 21 7v10l-9 4.5L3 17V7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3.5 7.2 12 11.5l8.5-4.3M12 11.5v9.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><g><circle cx="9" cy="7" r="1.4"/><circle cx="15" cy="7" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="17" r="1.4"/><circle cx="15" cy="17" r="1.4"/></g></symbol>
+  </defs>
+</svg>
+
+<!-- Decorative backdrop: aurora, swooshes, bubbles -->
+<div class="backdrop" aria-hidden="true">
+  <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+  <svg class="swoosh" viewBox="0 0 1440 400" preserveAspectRatio="none">
+    <path class="sw1" d="M0 260 C 240 160 480 340 760 250 S 1220 120 1440 210 L1440 400 L0 400 Z"/>
+    <path class="sw2" d="M0 300 C 300 220 560 380 860 300 S 1260 200 1440 270 L1440 400 L0 400 Z"/>
+    <path class="sw3" d="M0 340 C 260 300 620 400 940 340 S 1300 300 1440 330 L1440 400 L0 400 Z"/>
+  </svg>
+  <div class="bubbles" id="bubbles"></div>
+  <div class="scene-art" id="sceneArt"></div>
+  <canvas class="scene-canvas" id="sceneCanvas" aria-hidden="true"></canvas>
+  <div class="scene-glow" id="sceneGlow"></div>
+  <canvas class="fx" id="fxCanvas"></canvas>
+  <div class="scanlines"></div>
+</div>
+
+<main class="app" id="app">
+
+  <!-- ===================== MAIN WINDOW ===================== -->
+  <section class="win win-main" id="winMain" aria-label="Player">
+    <header class="titlebar">
+      <span class="tb-logo tb-logo-img"><img src="icons/favicon-48.png" alt=""></span>
+      <span class="tb-title"><span class="brand">Luci</span><span class="brand2">el</span></span>
+      <span class="tb-classic-title">LUCIEL</span>
+      <span class="tb-spacer"></span>
+      <button class="tb-btn" id="btnLibrary" title="Media library (G / Alt+L)"><svg><use href="#i-lib"/></svg><span class="tb-btn-label">Library</span></button>
+      <button class="tb-btn tb-mini" id="btnMini" title="Mini player — small always-on-top Luciel (O)"><svg><use href="#i-mini"/></svg><span class="tb-btn-label">Mini</span></button>
+      <button class="tb-btn" id="btnKeys" title="Keyboard shortcuts (?)"><svg><use href="#i-keys"/></svg></button>
+      <button class="tb-btn" id="btnTheme" title="Themes (T)"><svg><use href="#i-palette"/></svg><span class="tb-btn-label">Theme</span></button>
+    </header>
+
+    <div class="main-body">
+      <div class="stage-wrap" id="stageWrap" title="Click Lucielle for a reaction">
+        <canvas class="stage" id="stage"></canvas>
+        <div class="stage-ui">
+          <button class="st-btn" id="scPrevA" title="Previous scene">&#8249;</button>
+          <span class="st-name" id="sceneName">Scene</span>
+          <button class="st-btn" id="scNextA" title="Next scene (N)">&#8250;</button>
+        </div>
+        <div class="stage-shine"></div>
+      </div>
+
+      <!-- Classic-only LCD -->
+      <div class="lcd" id="lcd">
+        <div class="lcd-left">
+          <div class="lcd-state" id="lcdState"><span class="st-play">&#9654;</span><span class="st-pause">&#10074;&#10074;</span><span class="st-stop">&#9632;</span></div>
+          <div class="lcd-time" id="lcdTime" title="Click: elapsed / remaining"><span class="neg">-</span><span id="lcdTimeText">00:00</span></div>
+          <canvas class="mini-viz" id="miniViz" width="76" height="16" title="Click to change visualizer"></canvas>
+        </div>
+        <div class="lcd-right">
+          <div class="marquee" id="marquee"><span id="marqueeText">LUCIEL  ***  DROP SOME MUSIC IN  ***</span></div>
+          <div class="lcd-info">
+            <span class="lcd-box" id="lcdKbps">---</span><span class="lcd-unit">kbps</span>
+            <span class="lcd-box sm" id="lcdKhz">--</span><span class="lcd-unit">kHz</span>
+            <span class="lcd-box sm" id="lcdBpm">---</span><span class="lcd-unit">bpm</span>
+            <span class="lcd-ms"><span id="lcdMono">mono</span><span id="lcdStereo">stereo</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="track-info">
+      <div class="cover-wrap" id="coverWrap" title="Cover art">
+        <div class="cover-glass">
+          <img id="cover" alt="" hidden>
+          <div class="cover-placeholder" id="coverPh"><svg><use href="#i-note"/></svg></div>
+          <div class="cover-shine"></div>
+        </div>
+      </div>
+
+        <div class="ti-text">
+        <div class="ti-badges"><span class="badge" id="badgeFormat">READY</span><span class="badge ghost" id="badgeQuality"></span><span class="badge bpm" id="badgeBpm" hidden>&#9833; <b id="bpmVal">--</b> BPM</span>
+          <button class="fav" id="btnFav" title="Favorite (F)"><svg><use href="#i-heart"/></svg></button></div>
+        <h1 class="ti-title" id="tTitle">Nothing playing</h1>
+        <div class="ti-artist" id="tArtist">Drop audio files or folders anywhere</div>
+        <div class="ti-album" id="tAlbum"></div>
+        </div>
+      </div>
+
+      <div class="viz-wrap" id="vizWrap" title="Click to change visualizer (V)">
+        <canvas class="viz" id="viz"></canvas>
+        <span class="viz-label" id="vizLabel">SPECTRUM</span>
+      </div>
+
+      <div class="seek-row">
+        <span class="time-cur" id="timeCur">0:00</span>
+        <div class="range-wrap seek-wrap"><input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Seek"><div class="range-fill" id="seekFill"></div></div>
+        <span class="time-dur" id="timeDur">0:00</span>
+      </div>
+
+      <div class="controls-row">
+        <div class="transport">
+          <button class="tbtn winged" id="btnPrev" title="Previous (Z / Shift+←)"><img class="wing-deco l" src="mascot/ui/wingL.webp" alt=""><img class="wing-px l" src="mascot/pixel/wingL.png" alt=""><svg><use href="#i-prev"/></svg></button>
+          <button class="tbtn play" id="btnPlay" title="Play / Pause (Space)"><span class="halo-ring"></span><img class="halo-px" src="mascot/pixel/halo.png" alt=""><svg class="ic-play"><use href="#i-play"/></svg><svg class="ic-pause"><use href="#i-pause"/></svg></button>
+          <button class="tbtn classic-only" id="btnPauseC" title="Pause (C)"><svg><use href="#i-pause"/></svg></button>
+          <button class="tbtn" id="btnStop" title="Stop (V)"><svg><use href="#i-stop"/></svg></button>
+          <button class="tbtn winged" id="btnNext" title="Next (B / Shift+→)"><svg><use href="#i-next"/></svg><img class="wing-deco r" src="mascot/ui/wingR.webp" alt=""><img class="wing-px r" src="mascot/pixel/wingR.png" alt=""></button>
+          <button class="tbtn eject" id="btnEject" title="Open files (L)"><svg><use href="#i-eject"/></svg></button>
+        </div>
+
+        <div class="mix">
+          <div class="mix-item vol">
+            <button class="ibtn" id="btnMute" title="Mute (M)"><svg class="ic-vol"><use href="#i-vol"/></svg><svg class="ic-mute"><use href="#i-mute"/></svg></button>
+            <div class="range-wrap vol-wrap"><input type="range" id="volume" min="0" max="100" value="80" aria-label="Volume"><div class="range-fill" id="volFill"></div></div>
+          </div>
+          <div class="mix-item bal">
+            <span class="mix-label">BAL</span>
+            <div class="range-wrap bal-wrap"><input type="range" id="balance" min="-100" max="100" value="0" aria-label="Balance"><div class="range-center"></div></div>
+          </div>
+        </div>
+
+        <div class="toggles">
+          <button class="tog" id="btnShuffle" title="Shuffle (S)"><svg><use href="#i-shuffle"/></svg><span>SHUFFLE</span></button>
+          <button class="tog" id="btnRepeat" title="Repeat: off / all / one (R)"><svg><use href="#i-repeat"/></svg><span>REPEAT</span><i class="rep-one">1</i></button>
+          <button class="tog" id="btnShowEq" title="Equalizer window (E)"><svg><use href="#i-eq"/></svg><span>EQ</span></button>
+          <button class="tog" id="btnShowPl" title="Playlist window (P)"><svg><use href="#i-list"/></svg><span>PL</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== EQUALIZER ===================== -->
+  <!-- ===================== LUCIEL VISUALS (classic) ===================== -->
+  <section class="win win-mascot" id="winMascot" aria-label="Lucielle">
+    <header class="titlebar small">
+      <span class="tb-logo"><svg><use href="#i-note"/></svg></span>
+      <span class="tb-title">Lucielle</span>
+      <span class="tb-classic-title">LUCIEL VISUALS</span>
+      <span class="tb-spacer"></span>
+    </header>
+    <div class="px-stage-frame"><canvas class="px-stage" id="pxStage" width="86" height="133" title="Click Lucielle"></canvas></div>
+    <div class="mas-foot">
+      <button class="pbtn" id="scPrev" title="Previous scene">&lt;</button>
+      <span class="mas-info" id="masInfo">LUCIELLE</span>
+      <button class="pbtn" id="scNext" title="Next scene (N)">&gt;</button>
+    </div>
+  </section>
+
+  <section class="win win-eq" id="winEq" aria-label="Equalizer">
+    <img class="peek eq" id="peekEq" src="mascot/ui/peek.webp" alt="" title="Lucielle">
+    <header class="titlebar small">
+      <span class="tb-logo"><svg><use href="#i-eq"/></svg></span>
+      <span class="tb-title">Equalizer</span>
+      <span class="tb-classic-title">LUCIEL EQUALIZER</span>
+      <span class="tb-spacer"></span>
+      <button class="tb-btn close" data-close="eq" title="Close"><svg><use href="#i-close"/></svg></button>
+    </header>
+    <div class="eq-body">
+      <div class="eq-top">
+        <button class="tog small" id="eqOn" title="Enable equalizer">ON</button>
+        <button class="tog small" id="eqAuto" title="Auto-apply genre preset from tags">AUTO</button>
+        <canvas class="eq-graph" id="eqGraph" width="226" height="38"></canvas>
+        <div class="select-wrap"><select id="eqPreset" aria-label="EQ preset"></select></div>
+        <button class="tog small" id="eqReset" title="Reset to flat">RESET</button>
+      </div>
+      <div class="eq-sliders" id="eqSliders">
+        <div class="eq-band preamp">
+          <span class="eq-val" id="preampVal">0</span>
+          <div class="vslider"><input type="range" id="preamp" min="-12" max="12" step="0.5" value="0" aria-label="Preamp"></div>
+          <span class="eq-lbl">PRE</span>
+        </div>
+        <div class="eq-scale"><span>+12</span><span>0</span><span>-12</span></div>
+        <!-- bands injected -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== PLAYLIST ===================== -->
+  <section class="win win-pl" id="winPl" aria-label="Playlist">
+    <img class="peek" id="peekPl" src="mascot/ui/peek.webp" alt="" title="Lucielle">
+    <img class="peek-px" id="peekPx" src="mascot/pixel/peek.png" alt="">
+    <header class="titlebar small">
+      <span class="tb-logo"><svg><use href="#i-list"/></svg></span>
+      <span class="tb-title">Playlist <span class="pl-count" id="plCount"></span></span>
+      <span class="tb-classic-title">LUCIEL PLAYLIST</span>
+      <span class="tb-spacer"></span>
+      <button class="tb-btn close" data-close="pl" title="Close"><svg><use href="#i-close"/></svg></button>
+    </header>
+    <div class="pl-search">
+      <svg><use href="#i-search"/></svg>
+      <input type="search" id="plSearch" placeholder="Search title, artist, album…  ( / )" autocomplete="off">
+    </div>
+    <ol class="pl-list" id="plList" tabindex="0" aria-label="Tracks"></ol>
+    <div class="pl-empty" id="plEmpty">
+      <div class="pl-empty-orb"><svg><use href="#i-note"/></svg></div>
+      <p><b>Your playlist is empty</b></p>
+      <p>Drag &amp; drop audio files or folders here,<br>or use the buttons below.</p>
+      <p class="fmt-support" id="fmtSupport"></p>
+    </div>
+    <footer class="pl-foot">
+      <button class="pbtn" id="plAddFiles" title="Add files"><svg><use href="#i-plus"/></svg><span>ADD</span></button>
+      <button class="pbtn" id="plAddFolder" title="Add folder"><svg><use href="#i-folder"/></svg><span>DIR</span></button>
+      <button class="pbtn" id="plEdit" title="Edit tags of the selected songs (F2)"><span>✎</span><span>EDIT</span></button>
+      <button class="pbtn" id="plLib" title="Media library (G)"><svg><use href="#i-lib"/></svg><span>LIB</span></button>
+      <button class="pbtn" id="plRemove" title="Remove selected from the queue (Del)"><svg><use href="#i-minus"/></svg><span>REM</span></button>
+      <button class="pbtn" id="plClear" title="Clear playlist"><svg><use href="#i-trash"/></svg><span>CLR</span></button>
+      <div class="pbtn-menu">
+        <button class="pbtn" id="plSort" title="Sort playlist"><svg><use href="#i-sort"/></svg><span>SORT</span></button>
+        <div class="menu" id="sortMenu">
+          <button data-sort="title">By title</button>
+          <button data-sort="artist">By artist</button>
+          <button data-sort="album">By album / track</button>
+          <button data-sort="file">By file name</button>
+          <button data-sort="random">Randomize</button>
+          <button data-sort="reverse">Reverse</button>
+        </div>
+      </div>
+      <span class="pl-total" id="plTotal">0:00</span>
+    </footer>
+  </section>
+</main>
+
+<!-- Theme picker -->
+<div class="overlay" id="themeOverlay" hidden>
+  <div class="theme-menu" role="dialog" aria-label="Choose theme">
+    <div class="tm-head"><span>Choose a theme</span><button class="tb-btn" data-dismiss><svg><use href="#i-close"/></svg></button></div>
+    <div class="tm-section"><div class="tm-label">Aero &mdash; modern glass</div><div class="tm-grid" data-skin-grid="aero"></div></div>
+    <div class="tm-section"><div class="tm-label">Classic &mdash; Winamp 2.x style</div><div class="tm-grid" data-skin-grid="classic"></div></div>
+    <div class="tm-section"><div class="tm-label">Lucielle</div>
+      <div class="tm-row">
+        <label class="chk"><input type="checkbox" id="optMascot" checked> Show Lucielle</label>
+        <label class="chk">Size <span class="select-wrap"><select id="optSize"><option value="s">Small</option><option value="m" selected>Medium</option><option value="l">Large</option></select></span></label>
+        <label class="chk"><input type="checkbox" id="optDoze" checked> Doze when idle</label>
+        <label class="chk" title="Real-time ordered dither (Bayer 4x4/8x8) over any scene; shimmers with the beat"><input type="checkbox" id="optDither"> Dither FX</label>
+        <label class="chk" title="Pack scenes with their own colour theme recolour the player while they show"><input type="checkbox" id="optSceneColors" checked> Scene colours</label>
+        <label class="chk" title="Pack manifest rule: dance loops only on events, played once"><input type="checkbox" id="optStrict"> Strict pack rules</label>
+      </div>
+    </div>
+    <div class="tm-section"><div class="tm-label">Scene &mdash; auto picks by genre tag, tempo &amp; energy</div><div class="sc-grid" id="sceneGrid"></div></div>
+    <div class="tm-section"><div class="tm-label">Visual packs &mdash; add new scenes &amp; Lucielle loops without code</div>
+      <div class="tm-row pk-row">
+        <button class="pbtn" id="packImportZip" title="Import a visual pack (.zip with pack.json)"><svg><use href="#i-pack"/></svg><span>IMPORT .ZIP</span></button>
+        <button class="pbtn" id="packImportDir" title="Import a visual pack folder (contains pack.json)"><svg><use href="#i-folder"/></svg><span>IMPORT FOLDER</span></button>
+        <button class="pbtn" id="packManage" title="List, enable/disable, preview and delete packs"><span>☰</span><span>MANAGE PACKS</span></button>
+        <span class="pk-sum" id="packSummary"></span>
+      </div>
+    </div>
+    <div class="tm-section"><div class="tm-label">Mini player</div>
+      <div class="tm-row">
+        <label class="chk" title="Desktop app: the main window goes to the tray while the mini player is open (music keeps playing)"><input type="checkbox" id="optMiniHide"> Hide the main window to the tray while the mini player is open</label>
+        <span class="pk-sum">Press <b>O</b> or the mini button in the title bar</span>
+      </div>
+    </div>
+    <div class="tm-foot">
+      <label class="chk"><input type="checkbox" id="optBubbles" checked> Animated scene backdrop</label>
+      <label class="chk"><input type="checkbox" id="optRemember" checked> Remember tracks between sessions</label>
+    </div>
+  </div>
+</div>
+
+<!-- Shortcuts -->
+<div class="overlay" id="keysOverlay" hidden>
+  <div class="theme-menu keys" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="tm-head"><span>Keyboard shortcuts</span><button class="tb-btn" data-dismiss><svg><use href="#i-close"/></svg></button></div>
+    <dl class="keys-list">
+      <dt>Space / X / C</dt><dd>Play · Pause</dd>
+      <dt>V</dt><dd>Stop</dd>
+      <dt>Z / B</dt><dd>Previous / Next track</dd>
+      <dt>Shift + ← / →</dt><dd>Previous / Next track</dd>
+      <dt>← / →</dt><dd>Seek −5 s / +5 s</dd>
+      <dt>↑ / ↓</dt><dd>Volume up / down</dd>
+      <dt>M</dt><dd>Mute</dd>
+      <dt>S / R</dt><dd>Shuffle / Repeat mode</dd>
+      <dt>E / P</dt><dd>Toggle EQ / Playlist window</dd>
+      <dt>T / Shift+T</dt><dd>Next theme / Theme picker</dd>
+      <dt>K</dt><dd>Switch skin (Aero ⇄ Classic)</dd>
+      <dt>Shift + V / click viz</dt><dd>Cycle visualizer mode</dd>
+      <dt>L / Shift+L</dt><dd>Add files / Add folder</dd>
+      <dt>/</dt><dd>Search playlist</dd>
+      <dt>F / N</dt><dd>Favorite track / Next scene</dd>
+      <dt>G / Alt+L</dt><dd>Media library</dd>
+      <dt>O</dt><dd>Mini player (small always-on-top Luciel)</dd>
+      <dt>F2 / Ctrl+E</dt><dd>Edit tags of the selected songs</dd>
+      <dt>Enter / Del</dt><dd>Play / Remove selected</dd>
+      <dt>Alt + ↑ / ↓</dt><dd>Move selected track up / down</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- Visual packs manager -->
+<div class="overlay" id="packsOverlay" hidden>
+  <div class="theme-menu packs-menu" role="dialog" aria-label="Visual packs">
+    <div class="tm-head"><span>Visual packs</span><button class="tb-btn" data-dismiss><svg><use href="#i-close"/></svg></button></div>
+    <div class="pk-top">
+      <button class="pbtn primary" id="pkImportZip"><svg><use href="#i-pack"/></svg><span>IMPORT .ZIP</span></button>
+      <button class="pbtn" id="pkImportDir"><svg><use href="#i-folder"/></svg><span>IMPORT FOLDER</span></button>
+      <div class="pk-drop" id="pkDrop">or drop a pack .zip / folder here</div>
+    </div>
+    <p class="pk-help">A pack is a folder or .zip with a <code>pack.json</code> plus images, video loops and (optionally) Lucielle or character dance loops. Only images, video, audio and JSON are accepted &mdash; never scripts. Imported scenes join the scene picker and the auto genre / mood selection. Format: <b>PACKS.md</b>.</p>
+    <div class="pk-msg" id="pkMsg" hidden></div>
+    <div class="pk-list" id="pkList"></div>
+  </div>
+</div>
+<input type="file" id="packZipInput" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+<input type="file" id="packDirInput" webkitdirectory directory multiple hidden>
+<div class="mini-host" id="miniHost" hidden></div>
+
+<div class="drop-overlay" id="dropOverlay"><div class="drop-card"><svg><use href="#i-plus"/></svg><span>Drop to add to playlist</span></div></div>
+<!-- ===================== MEDIA LIBRARY ===================== -->
+<section class="win win-lib" id="winLib" aria-label="Media library" hidden>
+  <header class="titlebar small">
+    <span class="tb-logo"><svg><use href="#i-lib"/></svg></span>
+    <span class="tb-title">Library</span>
+    <span class="tb-classic-title">LUCIEL MEDIA LIBRARY</span>
+    <div class="lib-search"><svg><use href="#i-search"/></svg><input type="search" id="libSearch" placeholder="Search songs, artists, albums, genres, playlists…" autocomplete="off"></div>
+    <button class="tb-btn close" id="libClose" title="Close (Esc)"><svg><use href="#i-close"/></svg></button>
+  </header>
+  <div class="lib-body">
+    <nav class="lib-nav" id="libNav"></nav>
+    <div class="lib-main" id="libMain" tabindex="0"></div>
+  </div>
+  <footer class="lib-foot">
+    <button class="pbtn" id="libAdd"><svg><use href="#i-plus"/></svg><span>ADD</span></button>
+    <button class="pbtn" id="libAddDir"><svg><use href="#i-folder"/></svg><span>DIR</span></button>
+    <button class="pbtn" id="libNewPl"><span>+</span><span>NEW PLAYLIST</span></button>
+    <button class="pbtn" id="libImport"><span>⇪</span><span>IMPORT M3U</span></button>
+    <button class="pbtn" id="libEdit"><span>✎</span><span>EDIT</span></button>
+    <span class="lib-status" id="libStatus"></span>
+  </footer>
+</section>
+<div class="ctx" id="ctxMenu" hidden></div>
+<div class="overlay ask-overlay" id="askOverlay" hidden><div class="win ask-win"><div class="ask-title"></div><input type="text" spellcheck="false"><div class="ask-btns"><button class="pbtn ask-cancel">Cancel</button><button class="pbtn primary ask-ok">OK</button></div></div></div>
+<div class="overlay edit-overlay" id="editOverlay" hidden></div>
+<input type="file" id="m3uInput" accept=".m3u,.m3u8,audio/x-mpegurl" multiple hidden>
+
+<div class="toast" id="toast"></div>
+
+<input type="file" id="fileInput" multiple hidden accept="audio/*,video/webm,.mp3,.wav,.flac,.ogg,.oga,.opus,.m4a,.mp4,.aac,.webm,.weba,.aif,.aiff,.caf,.wma,.ape,.alac,.mka">
+<input type="file" id="folderInput" webkitdirectory directory multiple hidden>
+
+<script src="packs/luciel-core/pack.js"></script>
+<script src="js/packs.js"></script>
+<script src="mascot/mascot-data.js"></script>
+<script src="js/metadata.js"></script>
+<script src="js/bpm.js"></script>
+<script src="js/scenefx.js"></script>
+<script src="js/luciel.js"></script>
+<script src="js/tagwriter.js"></script>
+<script src="js/fsx.js"></script>
+<script src="js/library.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/packs-ui.js"></script>
+<script src="js/mini.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/audio-engine.js"></script>
+<script src="js/visualizer.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

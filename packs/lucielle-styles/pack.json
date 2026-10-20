@@ -1,0 +1,1170 @@
+{
+ "format": "luciel-pack/1",
+ "id": "lucielle-styles",
+ "name": "Lucielle Styles",
+ "author": "pj",
+ "version": "1.0.0",
+ "description": "Lucielle in three outfits: Arcade Angel (neon arcade, air-keytar), City Punk (night alley) and Fall Girl (autumn park). Looping backgrounds, bass-pulsed lights, music-reactive emotes and a matching colour theme per scene; pixel versions for the Classic skin.",
+ "preview": "preview.jpg",
+ "scenes": [
+  {
+   "id": "arcade-angel",
+   "name": "Arcade Angel",
+   "thumb": "bg/arcade-angel-thumb.jpg",
+   "background": {
+    "image": "bg/arcade-angel.jpg",
+    "video": "bg/arcade-angel.mp4",
+    "pixel": "bg/arcade-angel-px.png",
+    "glow": "bg/arcade-angel-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Arcade Angel",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/arcade-angel-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/arcade-angel-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/arcade-angel-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/arcade-angel-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/arcade-angel-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/arcade-angel-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/arcade-angel-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/arcade-angel-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/arcade-angel-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/arcade-angel-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "halo-spin": {
+      "sheet": "char/arcade-angel-halo-spin.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/arcade-angel-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/arcade-angel-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/arcade-angel-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/arcade-angel-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "rise": "halo-spin",
+     "sad": "sad",
+     "vocals": "sing"
+    }
+   },
+   "particles": [
+    "neon",
+    "sparkles"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.3,
+    "shake": 0.7,
+    "flash": 1.0,
+    "particles": 1,
+    "glowColor": "#ff4fd8",
+    "beatBurst": "neon"
+   },
+   "themeDefault": "blue",
+   "colors": {
+    "base": "blue",
+    "accent": "#ff3fd0",
+    "accent2": "#29f6ff",
+    "glow": "#ff4fd8",
+    "lcd": "#7ff9ff",
+    "bg": [
+     "#3a1066",
+     "#170634",
+     "#06020f"
+    ],
+    "frame": [
+     "#d9c8ff",
+     "#9f7fe0",
+     "#5a3a9a"
+    ]
+   },
+   "effects": [
+    {
+     "type": "scanlines",
+     "intensity": 0.3
+    }
+   ],
+   "match": {
+    "genres": [
+     "chiptune",
+     "video game",
+     "game",
+     "8-bit",
+     "synthpop",
+     "electropop",
+     "j-pop",
+     "k-pop",
+     "hyperpop",
+     "nightcore",
+     "eurobeat"
+    ],
+    "moods": [
+     "groove",
+     "hype"
+    ],
+    "bpm": [
+     100,
+     175
+    ],
+    "skins": [
+     "aero"
+    ]
+   }
+  },
+  {
+   "id": "arcade-angel-pixel",
+   "name": "Arcade Angel (Pixel)",
+   "pixel": true,
+   "thumb": "bg/arcade-angel-thumb.jpg",
+   "background": {
+    "image": "bg/arcade-angel-px.png",
+    "pixel": "bg/arcade-angel-px.png",
+    "pixelVideo": "bg/arcade-angel-px.mp4",
+    "glow": "bg/arcade-angel-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Arcade Angel",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/arcade-angel-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/arcade-angel-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/arcade-angel-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/arcade-angel-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/arcade-angel-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/arcade-angel-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/arcade-angel-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/arcade-angel-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/arcade-angel-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/arcade-angel-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "halo-spin": {
+      "sheet": "char/arcade-angel-halo-spin.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/arcade-angel-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/arcade-angel-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/arcade-angel-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/arcade-angel-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "rise": "halo-spin",
+     "sad": "sad",
+     "vocals": "sing"
+    }
+   },
+   "particles": [
+    "neon",
+    "sparkles"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.3,
+    "shake": 0.7,
+    "flash": 1.0,
+    "particles": 1,
+    "glowColor": "#ff4fd8",
+    "beatBurst": "neon"
+   },
+   "themeDefault": "blue",
+   "colors": {
+    "base": "blue",
+    "accent": "#ff3fd0",
+    "accent2": "#29f6ff",
+    "glow": "#ff4fd8",
+    "lcd": "#7ff9ff",
+    "bg": [
+     "#3a1066",
+     "#170634",
+     "#06020f"
+    ],
+    "frame": [
+     "#d9c8ff",
+     "#9f7fe0",
+     "#5a3a9a"
+    ]
+   },
+   "effects": [
+    {
+     "type": "scanlines",
+     "intensity": 0.25
+    }
+   ],
+   "match": {
+    "genres": [
+     "chiptune",
+     "video game",
+     "game",
+     "8-bit",
+     "synthpop",
+     "electropop",
+     "j-pop",
+     "k-pop",
+     "hyperpop",
+     "nightcore",
+     "eurobeat"
+    ],
+    "moods": [
+     "groove",
+     "hype"
+    ],
+    "bpm": [
+     100,
+     175
+    ],
+    "skins": [
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "city-punk",
+   "name": "City Punk",
+   "thumb": "bg/city-punk-thumb.jpg",
+   "background": {
+    "image": "bg/city-punk.jpg",
+    "video": "bg/city-punk.mp4",
+    "pixel": "bg/city-punk-px.png",
+    "glow": "bg/city-punk-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 City Punk",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/city-punk-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/city-punk-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/city-punk-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/city-punk-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/city-punk-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/city-punk-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/city-punk-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/city-punk-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/city-punk-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/city-punk-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "clap": {
+      "sheet": "char/city-punk-clap.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/city-punk-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/city-punk-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/city-punk-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/city-punk-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "rise": "clap",
+     "sad": "sad",
+     "vocals": "sing"
+    }
+   },
+   "particles": [
+    "steam",
+    "dust"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.3,
+    "shake": 0.7,
+    "flash": 1.0,
+    "particles": 1,
+    "glowColor": "#ff2a3d",
+    "beatBurst": "sparks"
+   },
+   "themeDefault": "red",
+   "colors": {
+    "base": "red",
+    "accent": "#ff2a3d",
+    "accent2": "#3d7bff",
+    "glow": "#ff2a3d",
+    "lcd": "#ff6a6a",
+    "bg": [
+     "#2a0a10",
+     "#120509",
+     "#040203"
+    ],
+    "frame": [
+     "#c9c9cf",
+     "#7d7d88",
+     "#3a3a44"
+    ]
+   },
+   "effects": [],
+   "match": {
+    "genres": [
+     "punk",
+     "pop punk",
+     "rock",
+     "metal",
+     "hardcore",
+     "grunge",
+     "emo",
+     "alternative",
+     "garage",
+     "industrial",
+     "drum and bass",
+     "phonk"
+    ],
+    "moods": [
+     "dark",
+     "hype"
+    ],
+    "bpm": [
+     110,
+     200
+    ],
+    "skins": [
+     "aero"
+    ]
+   }
+  },
+  {
+   "id": "city-punk-pixel",
+   "name": "City Punk (Pixel)",
+   "pixel": true,
+   "thumb": "bg/city-punk-thumb.jpg",
+   "background": {
+    "image": "bg/city-punk-px.png",
+    "pixel": "bg/city-punk-px.png",
+    "pixelVideo": "bg/city-punk-px.mp4",
+    "glow": "bg/city-punk-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 City Punk",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/city-punk-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/city-punk-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/city-punk-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/city-punk-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/city-punk-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/city-punk-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/city-punk-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/city-punk-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/city-punk-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/city-punk-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "clap": {
+      "sheet": "char/city-punk-clap.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/city-punk-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/city-punk-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/city-punk-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/city-punk-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "rise": "clap",
+     "sad": "sad",
+     "vocals": "sing"
+    }
+   },
+   "particles": [
+    "steam",
+    "dust"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.3,
+    "shake": 0.7,
+    "flash": 1.0,
+    "particles": 1,
+    "glowColor": "#ff2a3d",
+    "beatBurst": "sparks"
+   },
+   "themeDefault": "red",
+   "colors": {
+    "base": "red",
+    "accent": "#ff2a3d",
+    "accent2": "#3d7bff",
+    "glow": "#ff2a3d",
+    "lcd": "#ff6a6a",
+    "bg": [
+     "#2a0a10",
+     "#120509",
+     "#040203"
+    ],
+    "frame": [
+     "#c9c9cf",
+     "#7d7d88",
+     "#3a3a44"
+    ]
+   },
+   "effects": [
+    {
+     "type": "scanlines",
+     "intensity": 0.25
+    }
+   ],
+   "match": {
+    "genres": [
+     "punk",
+     "pop punk",
+     "rock",
+     "metal",
+     "hardcore",
+     "grunge",
+     "emo",
+     "alternative",
+     "garage",
+     "industrial",
+     "drum and bass",
+     "phonk"
+    ],
+    "moods": [
+     "dark",
+     "hype"
+    ],
+    "bpm": [
+     110,
+     200
+    ],
+    "skins": [
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "fall-girl",
+   "name": "Fall Girl",
+   "thumb": "bg/fall-girl-thumb.jpg",
+   "background": {
+    "image": "bg/fall-girl.jpg",
+    "video": "bg/fall-girl.mp4",
+    "pixel": "bg/fall-girl-px.png",
+    "glow": "bg/fall-girl-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Fall Girl",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/fall-girl-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/fall-girl-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/fall-girl-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/fall-girl-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/fall-girl-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/fall-girl-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/fall-girl-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/fall-girl-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/fall-girl-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/fall-girl-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "halo-spin": {
+      "sheet": "char/fall-girl-halo-spin.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/fall-girl-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/fall-girl-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/fall-girl-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/fall-girl-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "rise": "halo-spin",
+     "sad": "sad",
+     "vocals": "sing"
+    }
+   },
+   "particles": [
+    "leaves",
+    "dust"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.3,
+    "shake": 0.7,
+    "flash": 1.0,
+    "particles": 1,
+    "glowColor": "#ffb04a",
+    "beatBurst": "leaves"
+   },
+   "themeDefault": "aero",
+   "colors": {
+    "base": "aero",
+    "accent": "#d9692b",
+    "accent2": "#f2b14a",
+    "glow": "#ffb04a",
+    "lcd": "#ffd08a",
+    "text": "#3a2416",
+    "bg": [
+     "#fff1dc",
+     "#e9b47e",
+     "#a9592c"
+    ],
+    "frame": [
+     "#f3e3cf",
+     "#c9a27c",
+     "#7a5236"
+    ]
+   },
+   "effects": [],
+   "match": {
+    "genres": [
+     "lo-fi",
+     "lofi",
+     "indie",
+     "folk",
+     "acoustic",
+     "jazz",
+     "bossa nova",
+     "singer-songwriter",
+     "soul",
+     "r&b",
+     "ballad",
+     "chill"
+    ],
+    "moods": [
+     "chill",
+     "sad",
+     "love"
+    ],
+    "bpm": [
+     60,
+     115
+    ],
+    "skins": [
+     "aero"
+    ]
+   }
+  },
+  {
+   "id": "fall-girl-pixel",
+   "name": "Fall Girl (Pixel)",
+   "pixel": true,
+   "thumb": "bg/fall-girl-thumb.jpg",
+   "background": {
+    "image": "bg/fall-girl-px.png",
+    "pixel": "bg/fall-girl-px.png",
+    "pixelVideo": "bg/fall-girl-px.mp4",
+    "glow": "bg/fall-girl-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Fall Girl",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/fall-girl-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/fall-girl-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/fall-girl-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/fall-girl-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/fall-girl-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/fall-girl-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/fall-girl-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/fall-girl-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/fall-girl-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/fall-girl-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "halo-spin": {
+      "sheet": "char/fall-girl-halo-spin.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/fall-girl-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/fall-girl-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/fall-girl-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/fall-girl-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "rise": "halo-spin",
+     "sad": "sad",
+     "vocals": "sing"
+    }
+   },
+   "particles": [
+    "leaves",
+    "dust"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.3,
+    "shake": 0.7,
+    "flash": 1.0,
+    "particles": 1,
+    "glowColor": "#ffb04a",
+    "beatBurst": "leaves"
+   },
+   "themeDefault": "aero",
+   "colors": {
+    "base": "aero",
+    "accent": "#d9692b",
+    "accent2": "#f2b14a",
+    "glow": "#ffb04a",
+    "lcd": "#ffd08a",
+    "text": "#3a2416",
+    "bg": [
+     "#fff1dc",
+     "#e9b47e",
+     "#a9592c"
+    ],
+    "frame": [
+     "#f3e3cf",
+     "#c9a27c",
+     "#7a5236"
+    ]
+   },
+   "effects": [
+    {
+     "type": "dither",
+     "intensity": 0.25
+    }
+   ],
+   "match": {
+    "genres": [
+     "lo-fi",
+     "lofi",
+     "indie",
+     "folk",
+     "acoustic",
+     "jazz",
+     "bossa nova",
+     "singer-songwriter",
+     "soul",
+     "r&b",
+     "ballad",
+     "chill"
+    ],
+    "moods": [
+     "chill",
+     "sad",
+     "love"
+    ],
+    "bpm": [
+     60,
+     115
+    ],
+    "skins": [
+     "classic"
+    ]
+   }
+  }
+ ]
+}

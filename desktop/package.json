@@ -1,0 +1,19 @@
+{
+  "name": "luciel",
+  "productName": "Luciel",
+  "version": "1.0.4",
+  "description": "Luciel - aesthetic local music player with Lucielle",
+  "author": "pj",
+  "license": "UNLICENSED",
+  "main": "main.js",
+  "scripts": {
+    "sync": "node tools/sync-app.js",
+    "start": "electron .",
+    "dist:win": "node tools/sync-app.js && electron-builder --win nsis portable --x64",
+    "dist:linux": "node tools/sync-app.js && electron-builder --linux dir --x64"
+  },
+  "devDependencies": {
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3"
+  }
+}

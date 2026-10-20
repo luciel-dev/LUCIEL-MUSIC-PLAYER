@@ -1,0 +1,703 @@
+{
+ "format": "luciel-pack/1",
+ "id": "luciel-core",
+ "name": "Luciel Core",
+ "author": "Luciel",
+ "version": "1.0.1",
+ "description": "The built-in Lucielle scenes: genre stages, mood scenes, pixel stages for the Classic skin and the cyber / datamosh / dither loops.",
+ "preview": "icons/icon-512.png",
+ "builtin": true,
+ "scenes": [
+  {
+   "id": "aero-ambient",
+   "name": "Bubble Meadow",
+   "thumb": "art/thumb/aero-ambient.webp",
+   "background": {
+    "image": "art/aero-ambient.webp",
+    "pixel": "art/px/aero-ambient.png",
+    "featuresCharacter": true
+   },
+   "themeDefault": "aero",
+   "particles": [
+    "bubbles",
+    "sparkles"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [
+     "ambient",
+     "new age",
+     "chill",
+     "downtempo",
+     "meditative"
+    ],
+    "moods": [
+     "calm"
+    ]
+   }
+  },
+  {
+   "id": "classical",
+   "name": "Cathedral Hall",
+   "thumb": "art/thumb/classical.webp",
+   "background": {
+    "image": "art/classical.webp",
+    "pixel": "art/px/classical.png"
+   },
+   "particles": [
+    "feathers",
+    "notes"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "idle",
+     "music",
+     "shy"
+    ]
+   },
+   "match": {
+    "genres": [
+     "classical",
+     "orchestra",
+     "baroque",
+     "opera",
+     "piano",
+     "instrumental",
+     "soundtrack"
+    ],
+    "moods": [
+     "calm"
+    ]
+   }
+  },
+  {
+   "id": "hiphop",
+   "name": "Graffiti Street",
+   "thumb": "art/thumb/hiphop.webp",
+   "background": {
+    "image": "art/hiphop.webp",
+    "pixel": "art/px/hiphop.png"
+   },
+   "particles": [
+    "sparks"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "smug",
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [
+     "hip-hop",
+     "hip hop",
+     "rap",
+     "trap",
+     "r&b",
+     "gangsta"
+    ],
+    "moods": [
+     "groove"
+    ]
+   }
+  },
+  {
+   "id": "jazz",
+   "name": "Smoky Jazz Club",
+   "thumb": "art/thumb/jazz.webp",
+   "background": {
+    "image": "art/jazz.webp",
+    "pixel": "art/px/jazz.png"
+   },
+   "particles": [
+    "smoke",
+    "dust"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music",
+     "smug",
+     "shy"
+    ]
+   },
+   "match": {
+    "genres": [
+     "jazz",
+     "blues",
+     "swing",
+     "soul",
+     "bossa"
+    ],
+    "moods": [
+     "chill"
+    ]
+   }
+  },
+  {
+   "id": "mood-hype",
+   "name": "Hype Arena",
+   "thumb": "art/thumb/mood-hype.webp",
+   "background": {
+    "image": "art/mood-hype.webp",
+    "pixel": "art/px/mood-hype.png"
+   },
+   "particles": [
+    "confetti",
+    "embers"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "happy",
+     "surprised"
+    ],
+    "tier": "fast"
+   },
+   "match": {
+    "genres": [],
+    "moods": [
+     "hype"
+    ],
+    "energy": [
+     0.62,
+     1
+    ],
+    "bpm": [
+     124,
+     999
+    ]
+   }
+  },
+  {
+   "id": "mood-romantic",
+   "name": "Sunset Promenade",
+   "thumb": "art/thumb/mood-romantic.webp",
+   "background": {
+    "image": "art/mood-romantic.webp",
+    "pixel": "art/px/mood-romantic.png"
+   },
+   "particles": [
+    "petals",
+    "hearts"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "love",
+     "shy"
+    ]
+   },
+   "match": {
+    "genres": [
+     "love",
+     "romance",
+     "romantic",
+     "love song"
+    ],
+    "moods": [
+     "romantic"
+    ]
+   }
+  },
+  {
+   "id": "mood-sad",
+   "name": "Rainy Window",
+   "thumb": "art/thumb/mood-sad.webp",
+   "background": {
+    "image": "art/mood-sad.webp",
+    "pixel": "art/px/mood-sad.png"
+   },
+   "particles": [
+    "rain"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "crying",
+     "sleepy",
+     "cloud"
+    ]
+   },
+   "match": {
+    "genres": [
+     "sad",
+     "emo",
+     "ballad"
+    ],
+    "moods": [
+     "sad"
+    ],
+    "energy": [
+     0,
+     0.28
+    ],
+    "bpm": [
+     0,
+     92
+    ]
+   }
+  },
+  {
+   "id": "mood-sleepy",
+   "name": "Dream Clouds",
+   "thumb": "art/thumb/mood-sleepy.webp",
+   "background": {
+    "image": "art/mood-sleepy.webp",
+    "pixel": "art/px/mood-sleepy.png"
+   },
+   "particles": [
+    "stars",
+    "zzz"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "sleepy",
+     "cloud-sleep",
+     "cloud"
+    ]
+   },
+   "match": {
+    "genres": [
+     "sleep",
+     "lullaby"
+    ],
+    "moods": [
+     "sleepy"
+    ],
+    "energy": [
+     0,
+     0.18
+    ],
+    "bpm": [
+     0,
+     80
+    ]
+   }
+  },
+  {
+   "id": "pop",
+   "name": "Idol Stage",
+   "thumb": "art/thumb/pop.webp",
+   "background": {
+    "image": "art/pop.webp",
+    "pixel": "art/px/pop.png"
+   },
+   "particles": [
+    "confetti",
+    "hearts"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "happy",
+     "music",
+     "love"
+    ]
+   },
+   "match": {
+    "genres": [
+     "pop",
+     "j-pop",
+     "k-pop",
+     "dance pop",
+     "top 40",
+     "eurodance"
+    ],
+    "moods": [
+     "happy"
+    ]
+   }
+  },
+  {
+   "id": "synthwave",
+   "name": "Neon Horizon",
+   "thumb": "art/thumb/synthwave.webp",
+   "background": {
+    "image": "art/synthwave.webp",
+    "pixel": "art/px/synthwave.png"
+   },
+   "particles": [
+    "grid",
+    "stars"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music",
+     "smug"
+    ]
+   },
+   "match": {
+    "genres": [
+     "retrowave",
+     "outrun",
+     "synthpop",
+     "vaporwave",
+     "new wave",
+     "darkwave"
+    ],
+    "moods": [
+     "groove"
+    ],
+    "coverGenres": [
+     "synthwave",
+     "cyberpunk",
+     "industrial",
+     "darksynth"
+    ]
+   }
+  },
+  {
+   "id": "blue-lofi",
+   "name": "Rainy Rooftop",
+   "thumb": "art/thumb/blue-lofi.webp",
+   "background": {
+    "image": "art/blue-lofi.webp",
+    "pixel": "art/px/blue-lofi.png",
+    "featuresCharacter": true
+   },
+   "themeDefault": "blue",
+   "particles": [
+    "rain"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [
+     "chillhop",
+     "study",
+     "jazzhop"
+    ],
+    "moods": [
+     "chill"
+    ],
+    "coverGenres": [
+     "lofi",
+     "lo-fi",
+     "chiptune",
+     "8-bit",
+     "8bit",
+     "bitpop"
+    ]
+   }
+  },
+  {
+   "id": "pixel-aero",
+   "name": "Pixel Aero",
+   "thumb": "art/thumb/pixel-aero.webp",
+   "background": {
+    "image": "art/pixel-aero.webp",
+    "pixel": "art/px/pixel-aero.png"
+   },
+   "pixel": true,
+   "themeDefault": "aero",
+   "particles": [
+    "bubbles"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [],
+    "moods": [],
+    "skins": [
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "pixel-blue",
+   "name": "Pixel Blue",
+   "thumb": "art/thumb/pixel-blue.webp",
+   "background": {
+    "image": "art/pixel-blue.webp",
+    "pixel": "art/px/pixel-blue.png"
+   },
+   "pixel": true,
+   "themeDefault": "blue",
+   "particles": [
+    "rain",
+    "stars"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [],
+    "moods": [],
+    "skins": [
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "pixel-red",
+   "name": "Pixel Red",
+   "thumb": "art/thumb/pixel-red.webp",
+   "background": {
+    "image": "art/pixel-red.webp",
+    "pixel": "art/px/pixel-red.png"
+   },
+   "pixel": true,
+   "themeDefault": "red",
+   "particles": [
+    "embers"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [],
+    "moods": [],
+    "skins": [
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "pixel-slime",
+   "name": "Pixel Slime",
+   "thumb": "art/thumb/pixel-slime.webp",
+   "background": {
+    "image": "art/pixel-slime.webp",
+    "pixel": "art/px/pixel-slime.png"
+   },
+   "pixel": true,
+   "themeDefault": "slime",
+   "particles": [
+    "slime"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [],
+    "moods": [],
+    "skins": [
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "red-rock",
+   "name": "Crimson Stage",
+   "thumb": "art/thumb/red-rock.webp",
+   "background": {
+    "image": "art/red-rock.webp",
+    "pixel": "art/px/red-rock.png",
+    "featuresCharacter": true
+   },
+   "themeDefault": "red",
+   "particles": [
+    "embers"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [
+     "rock",
+     "metal",
+     "punk",
+     "grunge",
+     "hard rock",
+     "alternative"
+    ],
+    "moods": [
+     "angry"
+    ]
+   }
+  },
+  {
+   "id": "slime-rave",
+   "name": "Slime Rave",
+   "thumb": "art/thumb/slime-rave.webp",
+   "background": {
+    "image": "art/slime-rave.webp",
+    "pixel": "art/px/slime-rave.png",
+    "featuresCharacter": true
+   },
+   "themeDefault": "slime",
+   "particles": [
+    "slime",
+    "sparkles"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ]
+   },
+   "match": {
+    "genres": [
+     "edm",
+     "rave",
+     "dance",
+     "house",
+     "trance",
+     "dubstep"
+    ],
+    "moods": [
+     "hype"
+    ],
+    "coverGenres": [
+     "electronic",
+     "techno",
+     "glitch",
+     "idm"
+    ]
+   }
+  },
+  {
+   "id": "cyber",
+   "name": "Cyber Void",
+   "thumb": "art/thumb/cyber.webp",
+   "background": {
+    "image": "art/cyber.webp",
+    "video": "art/loops/cyber.mp4",
+    "pixel": "art/px/cyber.png",
+    "loopBpm": 120,
+    "loopDuration": 5.042
+   },
+   "particles": [
+    "glyphs"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ],
+    "tier": "auto"
+   },
+   "effects": [
+    {
+     "type": "cyber",
+     "intensity": 1
+    }
+   ],
+   "match": {
+    "genres": [
+     "synthwave",
+     "cyberpunk",
+     "industrial",
+     "darksynth",
+     "ebm",
+     "cyber"
+    ],
+    "moods": [
+     "groove"
+    ]
+   }
+  },
+  {
+   "id": "datamosh",
+   "name": "Datamosh",
+   "thumb": "art/thumb/datamosh.webp",
+   "background": {
+    "image": "art/datamosh.webp",
+    "video": "art/loops/datamosh.mp4",
+    "pixel": "art/px/datamosh.png",
+    "loopBpm": 120,
+    "loopDuration": 5.042
+   },
+   "particles": [
+    "sparkles"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ],
+    "tier": "auto"
+   },
+   "effects": [
+    {
+     "type": "datamosh",
+     "intensity": 1
+    }
+   ],
+   "match": {
+    "genres": [
+     "electronic",
+     "techno",
+     "glitch",
+     "idm",
+     "breakcore",
+     "experimental"
+    ],
+    "moods": [
+     "hype"
+    ]
+   }
+  },
+  {
+   "id": "dither",
+   "name": "Dither Moon",
+   "thumb": "art/thumb/dither.webp",
+   "background": {
+    "image": "art/dither.webp",
+    "pixel": "art/px/dither.png",
+    "loopBpm": 120,
+    "motion": "drift"
+   },
+   "particles": [
+    "stars"
+   ],
+   "character": {
+    "use": "lucielle",
+    "poses": [
+     "music"
+    ],
+    "tier": "auto"
+   },
+   "effects": [
+    {
+     "type": "dither",
+     "intensity": 1
+    }
+   ],
+   "match": {
+    "genres": [
+     "chiptune",
+     "chiptunes",
+     "8-bit",
+     "8bit",
+     "bitpop",
+     "lo-fi",
+     "lofi"
+    ],
+    "moods": [
+     "chill"
+    ]
+   }
+  }
+ ]
+}

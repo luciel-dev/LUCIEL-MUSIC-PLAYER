@@ -1,0 +1,32 @@
+{
+ "slow": {
+  "webm": "mascot/dance/slow.webm",
+  "sheet": "mascot/dance/slow-sheet.webp",
+  "frames": 73,
+  "cols": 9,
+  "size": 320,
+  "fps": 12,
+  "duration": 6.042,
+  "loopBpm": 110.8
+ },
+ "mid": {
+  "webm": "mascot/dance/mid.webm",
+  "sheet": "mascot/dance/mid-sheet.webp",
+  "frames": 73,
+  "cols": 9,
+  "size": 320,
+  "fps": 12,
+  "duration": 6.042,
+  "loopBpm": 120.0
+ },
+ "fast": {
+  "webm": "mascot/dance/fast.webm",
+  "sheet": "mascot/dance/fast-sheet.webp",
+  "frames": 73,
+  "cols": 9,
+  "size": 320,
+  "fps": 12,
+  "duration": 6.042,
+  "loopBpm": 160.0
+ }
+}

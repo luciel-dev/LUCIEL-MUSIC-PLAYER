@@ -1,0 +1,14 @@
+{
+ "idle": {
+  "file": "mascot/pixel/idle.png",
+  "frames": 4,
+  "w": 58,
+  "h": 64
+ },
+ "dance": {
+  "file": "mascot/pixel/dance.png",
+  "frames": 4,
+  "w": 58,
+  "h": 64
+ }
+}
