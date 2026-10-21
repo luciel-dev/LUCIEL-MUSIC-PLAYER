@@ -27,8 +27,8 @@ android {
         applicationId = "com.luciel.player"
         minSdk = 26
         targetSdk = 37
-        versionCode = 6
-        versionName = "1.1.3"
+        versionCode = 7
+        versionName = "1.1.4"
     }
     signingConfigs {
         create("release") {
@@ -68,6 +68,9 @@ dependencies {
     implementation("androidx.media3:media3-session:1.11.1")
     implementation("androidx.media3:media3-common:1.11.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    // optional Spotify connection: sign-in in a Custom Tab, tokens in EncryptedSharedPreferences
+    implementation("androidx.browser:browser:1.10.0")
+    implementation("androidx.security:security-crypto:1.1.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
     // native-graphics preview harness (renders the real floater / card views to PNG on the JVM)

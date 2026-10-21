@@ -203,6 +203,30 @@ class WebBridge(private val act: MainActivity) {
     /** tap on the stage: hide the system bars (swipe from an edge brings them back) */
     @JavascriptInterface fun immersive(on: Boolean) = main.post { act.setBarsHidden(on) }
 
+    // ---- optional Spotify connection (Web API). Tokens never leave the native side.
+    private val spotify get() = SpotifyConnect.get(act)
+    @JavascriptInterface fun spotifyStatus(): String = spotify.status().toString()
+    /** "" clears it; returns the new status, or {"error":"format"} for something that isn't a Client ID */
+    @JavascriptInterface fun spotifySetClientId(id: String): String {
+        val t = id.trim()
+        if (t.isNotEmpty() && !SpotifyClient.validClientId(t)) return JSONObject().put("error", "format").toString()
+        spotify.clientId = t; DebugLog.add("spotify", if (t.isEmpty()) "client id cleared" else "client id set")
+        return spotify.status().toString()
+    }
+    @JavascriptInterface fun spotifyConnect(): String {
+        val url = spotify.begin() ?: return "no-client-id"
+        main.post { SpotifyConnect.launch(act, url) }
+        return "opened"
+    }
+    @JavascriptInterface fun spotifyDisconnect() { spotify.disconnect(); DebugLog.add("spotify", "disconnected") }
+    /** resolves {status, body, retryAfter} (body = parsed JSON or null) */
+    @JavascriptInterface fun spotifyApi(id: Int, method: String, path: String, body: String) = net.execute {
+        val r = try { spotify.api(method, path, body.ifEmpty { null }) } catch (e: Exception) { HttpResp(0, "") }
+        val parsed: Any = try { if (r.body.isBlank()) JSONObject.NULL else org.json.JSONTokener(r.body).nextValue() } catch (_: Exception) { JSONObject.NULL }
+        if (r.code !in 200..299) DebugLog.add("spotify", "api $method ${path.substringBefore('?')} -> ${r.code}")
+        resolve(id, true, JSONObject().put("status", r.code).put("body", parsed).put("retryAfter", r.headers["retry-after"]?.toIntOrNull() ?: 0).toString())
+    }
+
     fun resolve(id: Int, ok: Boolean, valueJson: String) = main.post { act.js("window.LucielAndroidBridge&&LucielAndroidBridge._resolve($id,$ok,$valueJson)") }
 
     companion object {
@@ -213,6 +237,12 @@ class WebBridge(private val act: MainActivity) {
         /** session / audio focus / noisy -> page */
         fun sendCommand(cmd: String, arg: Long = 0) = h.post {
             webRef?.get()?.evaluateJavascript("window.LucielAndroidBridge&&LucielAndroidBridge.cmd(${JSONObject.quote(cmd)},$arg)", null)
+        }
+
+        private val net = java.util.concurrent.Executors.newFixedThreadPool(3)
+        /** native -> page event (e.g. the Spotify sign-in finished) */
+        fun pushEvent(name: String, data: JSONObject) = h.post {
+            webRef?.get()?.evaluateJavascript("window.LucielAndroidBridge&&LucielAndroidBridge.event&&LucielAndroidBridge.event(${JSONObject.quote(name)},$data)", null)
         }
 
         fun themeOf(o: JSONObject): FloaterTheme = Themes.of(o)

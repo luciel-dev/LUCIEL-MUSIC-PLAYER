@@ -22,7 +22,16 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (q.pathname === '/_n/art') { stats.art++; res.writeHead(404); res.end(); return; }
-  if (q.pathname === '/_n/ext-art') { const f = path.join(WWW, 'art/thumb/synthwave.webp'); res.writeHead(200, { 'Content-Type': 'image/webp' }); fs.createReadStream(f).pipe(res); return; }
+  // Spotify CDN pictures through Android (/_n/img): a local stand-in picture per URL, never the real CDN
+  if (q.pathname === '/_n/img') {
+    stats.img = (stats.img || 0) + 1;
+    if (!/^https:\/\/([a-z0-9-]+\.)?(scdn\.co|spotifycdn\.com)\//.test(q.query.u || '')) { res.writeHead(404); res.end(); return; }
+    const thumbs = fs.readdirSync(path.join(WWW, 'art/thumb')).filter((f) => f.endsWith('.webp')).sort();
+    let h = 0; for (const c of q.query.u) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    res.writeHead(200, { 'Content-Type': 'image/webp' }); fs.createReadStream(path.join(WWW, 'art/thumb', thumbs[h % thumbs.length])).pipe(res); return;
+  }
+  if (q.pathname === '/_n/ext-art' && q.query.delay) { stats.extArt = (stats.extArt || 0) + 1; setTimeout(() => { res.writeHead(200, { 'Content-Type': 'image/webp' }); fs.createReadStream(path.join(WWW, 'art/thumb/synthwave.webp')).pipe(res); }, +q.query.delay); return; }
+  if (q.pathname === '/_n/ext-art') { stats.extArt = (stats.extArt || 0) + 1; const f = path.join(WWW, 'art/thumb/synthwave.webp'); res.writeHead(200, { 'Content-Type': 'image/webp' }); fs.createReadStream(f).pipe(res); return; }
   let p = path.join(WWW, decodeURIComponent(q.pathname === '/' ? '/index.html' : q.pathname));
   if (!p.startsWith(WWW) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); res.end(); return; }
   res.writeHead(200, { 'Content-Type': MIME[path.extname(p).toLowerCase()] || 'application/octet-stream' }); fs.createReadStream(p).pipe(res);

@@ -16,11 +16,16 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- optional "Connect Spotify" (Web API) and Spotify cover pictures; nothing else goes online -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- see which music apps exist (labels / launch) -->
     <queries>
         <package android:name="com.spotify.music" />
         <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.APP_MUSIC" /></intent>
+        <!-- Custom Tabs for the Spotify sign-in -->
+        <intent><action android:name="android.support.customtabs.action.CustomTabsService" /></intent>
+        <intent><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="https" /></intent>
     </queries>
 
     <application
@@ -35,6 +40,22 @@
         android:hardwareAccelerated="true"
         android:largeHeap="true"
         tools:targetApi="37">
+
+        <!-- Spotify sign-in redirect: luciel://spotify-callback (PKCE; the code is useless without the verifier kept in the app) -->
+        <activity
+            android:name=".SpotifyCallbackActivity"
+            android:exported="true"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="luciel" android:host="spotify-callback" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".MainActivity"

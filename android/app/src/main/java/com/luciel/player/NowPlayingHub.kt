@@ -51,6 +51,12 @@ object NowPlayingHub {
     private var lastEventAt = 0L
     private var lastLoggedKey: String? = null
     @Volatile var artJpeg: ByteArray? = null; private set
+    /** covers by version (the page's URL names a version: always serve exactly that picture, never a newer/older one) */
+    private val artByVersion = object : LinkedHashMap<Int, ByteArray>(8, 0.75f, true) { override fun removeEldestEntry(e: MutableMap.MutableEntry<Int, ByteArray>?) = size > 6 }
+    /** covers by song (coming back to a song, or a later metadata update without a picture) */
+    private class Cover(val jpeg: ByteArray, val bmp: Bitmap, val tint: Tint?)
+    private val coverBySong = object : LinkedHashMap<String, Cover>(16, 0.75f, true) { override fun removeEldestEntry(e: MutableMap.MutableEntry<String, Cover>?) = size > 30 }
+    fun artFor(version: Int): ByteArray? = synchronized(artByVersion) { artByVersion[version] } ?: artJpeg
     @Volatile var artBitmap: Bitmap? = null; private set
     private var tint: Tint? = null
     @Volatile var current: ExtTrack? = null; private set
@@ -127,14 +133,19 @@ object NowPlayingHub {
             beats.trackChanged()
             // never show the previous song's cover under the new title: drop it until the new one is decoded
             artBitmap = null; artJpeg = null; tint = null; artReq++   // (also cancels a decode still running for the old song)
+            coverBySong[key]?.let { cv -> artVersion++; artBitmap = cv.bmp; artJpeg = cv.jpeg; tint = cv.tint; synchronized(artByVersion) { artByVersion[artVersion] = cv.jpeg } }
             if (title.isNotEmpty() && key != lastLoggedKey) { lastLoggedKey = key; DebugLog.add("spotify", "session: new song “$title” – $artist (${c.packageName})") }
         }
         // album art: bitmap in the metadata, or a content URI (content only – no network). Spotify often sends the
         // title first and the picture in a second metadata update, so the bitmap itself is part of the key.
         val bmp = md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ART) ?: md?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
-        val uri = md?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI) ?: md?.getString(MediaMetadata.METADATA_KEY_ART_URI)
-        val artKey = ArtRules.key(key, uri, bmp?.width ?: 0, bmp?.height ?: 0, bmp?.generationId ?: 0)
-        if (artKey != lastArtKey) { lastArtKey = artKey; setArt(bmp, uri) }
+        val uri = ArtRules.pickUri(md?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI), md?.getString(MediaMetadata.METADATA_KEY_ART_URI), md?.getString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI))
+        // NB: every MediaController.getMetadata() call unparcels NEW Bitmap objects, so the bitmap's identity
+        // (generationId) changes on every callback. 1.1.3 keyed on it -> a fresh decode + a new cover URL on each
+        // playback-state tick, and the page's hero <img> was replaced before it ever finished loading (empty box).
+        // Key on the picture's content instead.
+        val artKey = ArtRules.key(key, uri, bmp?.width ?: 0, bmp?.height ?: 0, ArtRules.sample(bmp))
+        if (artKey != lastArtKey) { lastArtKey = artKey; setArt(bmp, uri, key) }
         val t = ExtTrack(
             pkg = c.packageName, appLabel = label(c.packageName), title = title, artist = artist, album = album,
             durationMs = dur, playing = playing, positionMs = ps?.position ?: 0L,
@@ -146,15 +157,16 @@ object NowPlayingHub {
         publish(t)
     }
 
-    private fun setArt(bmp: Bitmap?, uri: String?) {
-        val v = ++artReq
+    private fun setArt(bmp: Bitmap?, uri: String?, songKey: String) {
         if (bmp == null && uri.isNullOrBlank()) return            // keep what we have (cleared on a song change); a picture may follow
+        val v = ++artReq
+        val src = if (bmp != null) "bitmap" else uri!!.substringBefore(':')
+        val t0 = SystemClock.elapsedRealtime()
         io.execute {
             try {
                 var b = bmp
-                if (b == null && uri != null && (uri.startsWith("content:") || uri.startsWith("android.resource:") || uri.startsWith("file:"))) {
-                    b = app.contentResolver.openInputStream(Uri.parse(uri))?.use { BitmapFactory.decodeStream(it) }
-                }
+                if (b == null && uri != null) b = loadUri(uri)
+                if (b == null) DebugLog.add("spotify", "cover: no picture from $src")
                 if (b == null || b.isRecycled) return@execute
                 val sc = 512f / maxOf(b.width, b.height)
                 val small = if (sc < 1f) Bitmap.createScaledBitmap(b, (b.width * sc).toInt().coerceAtLeast(1), (b.height * sc).toInt().coerceAtLeast(1), true) else b.copy(Bitmap.Config.ARGB_8888, false)
@@ -162,15 +174,28 @@ object NowPlayingHub {
                 val px = IntArray(48 * 48); tiny.getPixels(px, 0, 48, 0, 0, 48, 48)
                 val ti = CoverPalette.extract(px)
                 val out = ByteArrayOutputStream(); small.compress(Bitmap.CompressFormat.JPEG, 88, out)
+                val jpeg = out.toByteArray()
                 main.post {
                     if (v != artReq) return@post
+                    if (artJpeg?.contentEquals(jpeg) == true) return@post   // same picture again: keep the URL the page already has
                     artVersion++                                   // new URL for the page: /_n/ext-art?v=<artVersion>
-                    artBitmap = small; artJpeg = out.toByteArray(); tint = ti
+                    artBitmap = small; artJpeg = jpeg; tint = ti
+                    synchronized(artByVersion) { artByVersion[artVersion] = jpeg }
+                    coverBySong[songKey] = Cover(jpeg, small, ti)
+                    DebugLog.add("spotify", "cover ready ($src, ${SystemClock.elapsedRealtime() - t0} ms)")
                     lastEventAt = SystemClock.elapsedRealtime()
                     update()
                 }
             } catch (t: Throwable) { Log.w(TAG, "art", t) }
         }
+    }
+
+    /** cover from a URI: content:// / file / resource via ContentResolver, Spotify's "spotify:image:<id>" and https
+     *  pictures from Spotify's public image CDN only */
+    private fun loadUri(uri: String): Bitmap? {
+        val u = ArtRules.resolve(uri) ?: return null
+        return if (u.startsWith("https://")) ImageProxy.fetchBitmap(app, u, 640)
+        else app.contentResolver.openInputStream(Uri.parse(u))?.use { BitmapFactory.decodeStream(it) }
     }
 
     private fun publish(t: ExtTrack?) {
@@ -204,5 +229,20 @@ object NowPlayingHub {
 
 /** cover-art bookkeeping rules (unit-tested): what identifies "a new picture" for a song */
 object ArtRules {
-    fun key(trackKey: String, uri: String?, w: Int, h: Int, gen: Int): String = trackKey + "|" + (uri ?: "") + "|" + (if (w > 0) "${w}x$h#$gen" else "-")
+    fun key(trackKey: String, uri: String?, w: Int, h: Int, sample: Int): String = trackKey + "|" + (uri ?: "") + "|" + (if (w > 0) "${w}x$h#$sample" else "-")
+    /** a cheap fingerprint of the picture's pixels (8×8 samples), stable across parcel copies of the same bitmap */
+    fun sample(b: Bitmap?): Int {
+        if (b == null || b.isRecycled || b.width <= 0) return 0
+        return try { var h = 17; for (y in 0 until 8) for (x in 0 until 8) h = h * 31 + b.getPixel((b.width - 1) * x / 7, (b.height - 1) * y / 7); h } catch (_: Throwable) { b.width * 31 + b.height }
+    }
+    /** the first usable cover URI among ALBUM_ART_URI, ART_URI, DISPLAY_ICON_URI */
+    fun pickUri(vararg u: String?): String? = u.firstOrNull { !it.isNullOrBlank() && resolve(it) != null }
+    /** URI we can load: content / file / android.resource as is; spotify:image:<id> -> Spotify's image CDN; https only from Spotify's CDNs */
+    fun resolve(uri: String): String? {
+        val u = uri.trim()
+        Regex("^spotify:image:([0-9a-fA-F]{16,64})$").find(u)?.let { return "https://i.scdn.co/image/" + it.groupValues[1].lowercase() }
+        if (u.startsWith("content:") || u.startsWith("file:") || u.startsWith("android.resource:")) return u
+        if (u.startsWith("https://") && ImageProxy.allowed(u)) return u
+        return null
+    }
 }

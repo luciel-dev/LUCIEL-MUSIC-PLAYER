@@ -74,6 +74,18 @@ patch('js/visualizer.js', [
   ['        const t = this.time, step = t.length / W;', '        const t = this.time || new Uint8Array(1024).fill(128), step = t.length / W;', 'scope without analyser'],
 ]);
 
+patch('js/mobile.js', [
+  // 1.1.4: the Spotify tab has its own player, so Luciel's mini bar never sits on top of it (and it gives the space back);
+  // on Luciel's own tabs the mini bar only ever shows Luciel's own music (miniInfo() no longer returns Spotify)
+  ["    const t = A.current, show = active && (sp ? true : tab !== 'player' && !!t);",
+   "    const t = A.current, apart = HAS_SP && !!(SP().hideMini && SP().hideMini(tab)), show = active && !apart && (sp ? true : tab !== 'player' && !!t);", 'mini bar kept apart from the Spotify tab'],
+  // Settings > Spotify: the optional Spotify account (Client ID + Connect)
+  ["<div class=\"m-sec\">Phone</div><div class=\"m-group\">${navRow('__phone', G_('☏'), 'Phone music, Spotify & permissions', null)}</div>",
+   "<div class=\"m-sec\">Phone</div><div class=\"m-group\">${navRow('__phone', G_('☏'), 'Phone music, Spotify & permissions', null)}</div>${window.LucielSpotify && window.LucielSpotify.accountRow ? `<div class=\"m-sec\">Spotify</div><div class=\"m-group\">${navRow('__spAccount', G_('♫'), 'Spotify account · Client ID', null, window.LucielSpotify.accountRow())}</div>` : ''}", 'settings: Spotify account row'],
+  ["else if (id === '__pop') popOut(); else if (id === '__phone') window.LucielAndroidUI.openSheet();",
+   "else if (id === '__pop') popOut(); else if (id === '__phone') window.LucielAndroidUI.openSheet(); else if (id === '__spAccount') window.LucielSpotify.openAccount();", 'settings: open the Spotify account page'],
+]);
+
 // Android layer
 fs.cpSync(path.join(ROOT, 'web'), path.join(DST, 'android'), { recursive: true });
 // bundled visual packs (installed on first launch, re-installable from the Phone sheet)

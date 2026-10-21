@@ -153,20 +153,25 @@ async function run(W, Hh) {
   const s1 = await ev(() => ({ calls: window.__calls.slice(), playing: !window.Luciel.app.engine.audio.paused, src: window.LucielSpotify.activeSource(), stored: localStorage.getItem('luciel.source') }));
   if (process.env.DBGT) console.log(JSON.stringify(s1));
   ok(s1.playing && s1.calls.includes('ext:pause') && s1.src === 'local' && JSON.parse(s1.stored) === 'local', `[${tag}] playing a local song pauses Spotify (ext:pause) and makes Luciel the source`);
-  const m1 = await ev(() => ({ badge: document.getElementById('mMiniSrc').textContent, sp: document.getElementById('mMini').classList.contains('src-sp'), vis: getComputedStyle(document.getElementById('mMini')).display !== 'none' }));
-  ok(m1.vis && /Luciel/i.test(m1.badge) && !m1.sp, `[${tag}] mini bar shows the "Luciel" source badge on the Spotify tab`);
+  // 1.1.4: the two players are kept apart – no Luciel mini bar on the Spotify tab, and the page gets that space back
+  const m1 = await ev(() => { const m = document.getElementById('mMini'), r = m.getBoundingClientRect(); return { hidden: m.hidden || getComputedStyle(m).display === 'none' || r.height === 0, cls: document.getElementById('mShell').classList.contains('m-has-mini') || document.body.classList.contains('m-has-mini') }; });
+  ok(m1.hidden && !m1.cls, `[${tag}] no Luciel mini bar on the Spotify tab (even with a local song loaded), and its space is given back`);
   await shot('spotify-mini-local');
   // now press play on the Spotify tab: local pauses, Spotify plays
   await clear(); await ev(() => document.querySelector('#mSpotify .sp-hero [data-act="toggle"]').click()); await wait(page, 300);
-  const s2 = await ev(() => ({ calls: window.__calls.slice(), paused: window.Luciel.app.engine.audio.paused, src: window.LucielSpotify.activeSource(), stored: localStorage.getItem('luciel.source') }));
+  const s2 = await ev(() => ({ calls: window.__calls.slice(), paused: window.Luciel.app.engine.audio.paused, src: window.LucielSpotify.activeSource(), stored: localStorage.getItem('luciel.source'), cur: window.Luciel.app.current && window.Luciel.app.current.id, q: window.Luciel.app.queue ? window.Luciel.app.queue.length : -1 }));
   if (process.env.DBGT) console.log(JSON.stringify(s2));
   ok(s2.paused && s2.calls.includes('ext:toggle') && s2.src === 'spotify' && JSON.parse(s2.stored) === 'spotify', `[${tag}] play on the Spotify tab pauses Luciel's own music; never both at once`);
+  ok(!!s2.cur, `[${tag}] a Spotify action only pauses Luciel: the local song stays loaded (nothing else changes)`);
   await ev(() => document.querySelector('#mTabs [data-tab="library"]').click()); await wait(page, 400);
-  const m2 = await ev(() => ({ badge: document.getElementById('mMiniSrc').textContent, sp: document.getElementById('mMini').classList.contains('src-sp'), title: document.getElementById('mMiniTitle').textContent, extOff: window.__calls.includes('extUse:false') }));
-  ok(m2.sp && /Spotify/i.test(m2.badge) && m2.title === 'Midnight City Drive', `[${tag}] mini bar follows Spotify with a "Spotify" badge (${m2.title})`);
+  const m2 = await ev(() => ({ badge: document.getElementById('mMiniSrc').textContent, sp: document.getElementById('mMini').classList.contains('src-sp'), title: document.getElementById('mMiniTitle').textContent, vis: !document.getElementById('mMini').hidden, local: window.Luciel.app.title(window.Luciel.app.current), extOff: window.__calls.includes('extUse:false') }));
+  ok(m2.vis && !m2.sp && /Luciel/i.test(m2.badge) && m2.title === m2.local && m2.title !== 'Midnight City Drive', `[${tag}] on Luciel's tabs the mini bar shows only Luciel's own song (${m2.title}), never Spotify's`);
   await shot('spotify-mini-spotify');
-  await clear(); await ev(() => document.querySelector('#mMini [data-act="play"], #mMini .m-mini-play, #mMini button').click()); await wait(page, 150);
-  ok((await calls()).some((c) => /^ext:(toggle|pause)/.test(c)) && await ev(() => window.Luciel.app.engine.audio.paused), `[${tag}] mini play/pause controls Spotify while it is the source`);
+  await clear(); await ev(() => document.getElementById('mMiniPlay').click()); await wait(page, 400);
+  const m3 = await ev(() => ({ calls: window.__calls.slice(), playing: !window.Luciel.app.engine.audio.paused }));
+  ok(m3.playing && !m3.calls.includes('ext:toggle') && m3.calls.includes('ext:pause'), `[${tag}] the mini bar's play is Luciel's own play (Spotify is just paused by the one-source rule)`);
+  await ev(() => window.Luciel.app.engine.audio.pause()); await wait(page, 100);
+  await ev((s) => { window.__ext = Object.assign({}, s, { playing: true }); window.LucielAndroidBridge.ext(Object.assign({}, window.__ext)); }, SONG); await wait(page, 300);
   ok(m2.extOff, `[${tag}] leaving the Spotify tab turns Spotify-driven visuals off again`);
   // persistence: reload starts on the Spotify tab
   await ev(() => sessionStorage.clear()); await page.reload({ waitUntil: 'networkidle' }); await wait(page, 800);   // a fresh app start (the tab is only kept per session)

@@ -23,7 +23,8 @@ import java.io.InputStream
  *   /…               bundled web app (assets/www)
  *   /_n/c?u=URI      a content:// audio file, with HTTP Range support so seeking works
  *   /_n/art?u=URI    album art thumbnail for a MediaStore track (JPEG)
- *   /_n/ext-art      cover of the song playing in Spotify / another player (JPEG)
+ *   /_n/ext-art?v=N  cover of the song playing in Spotify / another player (JPEG, exactly version N)
+ *   /_n/img?u=URL    a Spotify CDN picture (playlist / album cover), disk-cached
  */
 class LocalContent(private val ctx: Context) {
     private val assets = WebViewAssetLoader.Builder().addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(ctx)).build()
@@ -41,7 +42,10 @@ class LocalContent(private val ctx: Context) {
                     content(u, req.requestHeaders)
                 }
                 path == "/_n/art" -> art(Uri.parse(url.getQueryParameter("u") ?: return notFound()))
-                path == "/_n/ext-art" -> NowPlayingHub.artJpeg?.let { ok("image/jpeg", ByteArrayInputStream(it), it.size.toLong(), noCache = true) } ?: notFound()
+                path == "/_n/ext-art" -> (url.getQueryParameter("v")?.toIntOrNull()?.let { NowPlayingHub.artFor(it) } ?: NowPlayingHub.artJpeg)
+                    ?.let { ok("image/jpeg", ByteArrayInputStream(it), it.size.toLong(), noCache = true) } ?: status(404, "No cover")
+                // Spotify Web API pictures (playlist / album covers), fetched natively from Spotify's CDN and cached on disk
+                path == "/_n/img" -> ImageProxy.get(ctx, url.getQueryParameter("u") ?: "")?.let { (mime, bytes) -> ok(mime, ByteArrayInputStream(bytes), bytes.size.toLong(), noCache = false) } ?: status(404, "No image")
                 path == "/" || path.isEmpty() -> assets.shouldInterceptRequest(Uri.parse("https://$HOST/www/index.html"))
                 else -> assets.shouldInterceptRequest(Uri.parse("https://$HOST/www$path"))?.also { fixMime(it, path) } ?: notFound()
             }
@@ -98,7 +102,7 @@ class LocalContent(private val ctx: Context) {
     private fun ok(mime: String, s: InputStream, len: Long, noCache: Boolean = false) =
         WebResourceResponse(mime, null, 200, "OK", mapOf("Content-Length" to len.toString(), "Cache-Control" to if (noCache) "no-store" else "max-age=600"), s)
     private fun notFound() = status(404, "Not Found")
-    private fun status(code: Int, msg: String) = WebResourceResponse("text/plain", "utf-8", code, msg, emptyMap(), ByteArrayInputStream(ByteArray(0)))
+    private fun status(code: Int, msg: String) = WebResourceResponse("text/plain", "utf-8", code, msg, mapOf("Cache-Control" to "no-store"), ByteArrayInputStream(ByteArray(0)))
 
     /** stream that stops after [left] bytes and closes the descriptor */
     private class Limited(s: InputStream, private var left: Long, private val afd: android.content.res.AssetFileDescriptor) : FilterInputStream(s) {
