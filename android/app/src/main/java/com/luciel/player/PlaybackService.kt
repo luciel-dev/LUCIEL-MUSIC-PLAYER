@@ -5,8 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Looper
@@ -102,19 +100,15 @@ class WebPlayer(looper: Looper, private val onCommand: (String, Long) -> Unit) :
 class PlaybackService : MediaSessionService() {
     private var session: MediaSession? = null
     lateinit var player: WebPlayer; private set
-    private lateinit var am: AudioManager
-    private var focus: AudioFocusRequest? = null
-    private val focusLogic = FocusLogic()
     private var noisyRegistered = false
 
     private val noisy = object : BroadcastReceiver() {
         // headphones unplugged / Bluetooth disconnected: pause right away (and don't auto-resume after a call)
-        override fun onReceive(c: Context?, i: Intent?) { if (i?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) { focusLogic.onUserPause(); WebBridge.sendCommand("pause") } }
+        override fun onReceive(c: Context?, i: Intent?) { if (i?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) { DebugLog.add("native", "pause: headphones unplugged / Bluetooth disconnected"); WebBridge.sendCommand("pause") } }
     }
 
     override fun onCreate() {
         super.onCreate()
-        am = getSystemService(AudioManager::class.java)
         player = WebPlayer(Looper.getMainLooper()) { cmd, pos -> control(cmd, pos) }
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         session = MediaSession.Builder(this, player).setSessionActivity(open).setId("luciel").build()
@@ -122,13 +116,18 @@ class PlaybackService : MediaSessionService() {
         WebBridge.lastState?.let { onWebState(it) }
     }
 
-    /** session buttons, notification, floater -> page (audio-focus aware) */
+    /**
+     * Session buttons, notification, lock screen, headset, floater -> page.
+     *
+     * Audio focus is NOT requested here. The WebView's own media session (Chromium AudioFocusDelegate) requests
+     * AUDIOFOCUS_GAIN as soon as the <audio> element plays and already pauses on calls / other players, resumes after a
+     * transient loss and ducks for notifications. 1.0.x-1.1.0 requested focus a second time from this service, which
+     * made Android take it away from the WebView, and the WebView paused the music within a second of every play.
+     */
     fun control(cmd: String, pos: Long = 0) {
+        DebugLog.add("native", "control $cmd${if (pos != 0L) " $pos" else ""} (notification / lock screen / headset / floater)")
         when (cmd) {
-            // a play press during a phone call: Android refuses focus -> stay paused instead of playing over the call
-            "play" -> if (requestFocus()) WebBridge.sendCommand(cmd, pos)
-            "pause" -> { focusLogic.onUserPause(); WebBridge.sendCommand(cmd, pos) }
-            "toggle" -> control(if (player.web.playing) "pause" else "play", pos)
+            "toggle" -> WebBridge.sendCommand(if (player.web.playing) "pause" else "play", pos)
             else -> WebBridge.sendCommand(cmd, pos)
         }
     }
@@ -139,21 +138,8 @@ class PlaybackService : MediaSessionService() {
     fun onWebState(s: WebState) {
         val wasPlaying = player.web.playing
         player.web = s
-        // started from the page itself (play button, auto-advance): ask for focus; refused (call in progress) -> pause again
-        if (s.playing && !wasPlaying) { if (requestFocus()) registerNoisy(true) else WebBridge.sendCommand("pause") }
-        if (!s.playing && wasPlaying) registerNoisy(false)
-    }
-
-    /** true when we hold (or just got) audio focus */
-    private fun requestFocus(): Boolean {
-        if (!focusLogic.needsRequest()) return true
-        val req = focus ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
-            .setWillPauseWhenDucked(false)          // let Android duck us (navigation prompts etc.)
-            .setOnAudioFocusChangeListener { change ->
-                focusLogic.onChange(change, player.web.playing).forEach { (c, a) -> WebBridge.sendCommand(c, a) }
-            }.build().also { focus = it }
-        return focusLogic.onRequest(am.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
+        if (s.playing && !wasPlaying) { DebugLog.add("native", "page playing: ${s.title}"); registerNoisy(true) }
+        if (!s.playing && wasPlaying) { DebugLog.add("native", "page paused/stopped at ${s.positionMs / 1000.0}s"); registerNoisy(false) }
     }
 
     private fun registerNoisy(on: Boolean) {
@@ -163,13 +149,13 @@ class PlaybackService : MediaSessionService() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         // the WebView (and with it the music) lives in the activity; when the task is swiped away, stop cleanly
+        DebugLog.add("native", "pause: app swiped away from recents")
         WebBridge.sendCommand("pause")
         stopSelf()
     }
 
     override fun onDestroy() {
         registerNoisy(false)
-        focus?.let { am.abandonAudioFocusRequest(it) }
         session?.run { player.release(); release() }
         session = null
         if (instance === this) instance = null

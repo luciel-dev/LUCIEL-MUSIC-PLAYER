@@ -27,6 +27,7 @@
   };
 
   const engine = new Engine();
+  const DBG = window.LucielDebug;
   const tracker = new window.LucielBPM.Tracker();
   const luciel = window.Luciel.create({ elements: {
     stage: $('stage'), pxStage: $('pxStage'), backArt: $('sceneArt'), backGlow: $('sceneGlow'), fx: $('fxCanvas'), sceneCanvas: $('sceneCanvas'),
@@ -235,7 +236,7 @@
 
   function removeTracks(ids) {
     if (!ids.size) return;
-    if (current && ids.has(current.id)) { stop(); current = null; audio.removeAttribute('src'); audio.load(); updateNowPlaying(); }
+    if (current && ids.has(current.id)) { stop('song removed from the library'); current = null; audio.removeAttribute('src'); audio.load(); updateNowPlaying(); }
     tracks = tracks.filter((t) => !ids.has(t.id));   // songs stay in the library
     ids.forEach((id) => selection.delete(id));
     history = history.filter((id) => !ids.has(id));
@@ -270,9 +271,8 @@
   let objectUrl = null;
   function playTrack(t, { autoplay = true, startAt = 0 } = {}) {
     if (!t) return false;
-    if (!t.supported) {
-      luciel.failed();
-      toast(`“${displayTitle(t)}” (${t.ext.toUpperCase() || 'unknown'}) can’t be decoded by this browser`, 'warn');
+    if (t.failed) {
+      toast(`“${displayTitle(t)}” can’t be played on this device (${(t.ext || '?').toUpperCase()})`, 'warn');
       return false;
     }
     if (autoplay) engine.ensure();
@@ -281,9 +281,12 @@
     const oldUrl = objectUrl;
     objectUrl = URL.createObjectURL(t.file);
     if (oldUrl) setTimeout(() => URL.revokeObjectURL(oldUrl), 3000);
-    audio.src = objectUrl;
+    engine.label = displayTitle(t);
+    // a song that needed the fallback before plays its decoded copy straight away
+    audio.src = t.rescued || objectUrl;
+    if (!t.supported && !t.rescued) { DBG.add('fallback', `${displayTitle(t)}: format not reported as playable – trying anyway, fallbacks ready`); }
     if (startAt > 0) audio.addEventListener('loadedmetadata', () => { try { audio.currentTime = Math.min(startAt, (audio.duration || startAt) - 0.5); } catch (e) {} }, { once: true });
-    if (autoplay) audio.play().catch((e) => { if (e.name !== 'AbortError') console.warn(e); });
+    if (autoplay) engine.play('song start');
     if (S.eqAuto && t.meta && t.meta.genre) {
       const hit = GENRE_PRESET.find(([re]) => re.test(t.meta.genre));
       applyPreset(hit ? hit[1] : 'Flat', true);
@@ -336,13 +339,15 @@
       return;
     }
     engine.ensure();
-    if (audio.paused) audio.play().catch(() => {}); else audio.pause();
+    if (audio.paused) engine.play('user: play/pause'); else engine.pauseFor('user: play/pause');
   }
-  function play() { if (!current) return togglePlay(); engine.ensure(); if (audio.paused) audio.play().catch(() => {}); }
-  function pause() { if (!audio.paused) audio.pause(); else if (current && audio.currentTime > 0) play(); }
-  function stop() { audio.pause(); try { audio.currentTime = 0; } catch (e) {} setState('stop'); updateTime(); }
+  function play() { if (!current) return togglePlay(); engine.ensure(); if (audio.paused) engine.play('user: play'); }
+  function pause() { if (!audio.paused) engine.pauseFor('user: pause'); else if (current && audio.currentTime > 0) play(); }
+  function stop(reason) { engine.pauseFor(typeof reason === 'string' ? reason : 'user: stop'); try { audio.currentTime = 0; } catch (e) {} setState('stop'); updateTime(); }
 
-  function playable() { return tracks.filter((t) => t.supported); }
+  // songs that failed every fallback this session are skipped; everything else is tried (formats are often playable
+  // even when canPlayType() says '')
+  function playable() { return tracks.filter((t) => !t.failed); }
   function next(auto = false) {
     const list = playable();
     if (!list.length) return;
@@ -357,10 +362,10 @@
     for (let k = 0; k < tracks.length; k++) {
       i++;
       if (i >= tracks.length) {
-        if (auto && S.repeat !== 'all') { stop(); lcdFlash('END OF PLAYLIST'); return; }
+        if (auto && S.repeat !== 'all') { stop('end of the queue'); lcdFlash('END OF PLAYLIST'); return; }
         i = 0;
       }
-      if (tracks[i].supported) return playTrack(tracks[i]);
+      if (!tracks[i].failed) return playTrack(tracks[i]);
     }
   }
   function prev() {
@@ -372,7 +377,7 @@
     let i = current ? tracks.indexOf(current) : 0;
     for (let k = 0; k < tracks.length; k++) {
       i = i - 1 < 0 ? tracks.length - 1 : i - 1;
-      if (tracks[i].supported) return playTrack(tracks[i]);
+      if (!tracks[i].failed) return playTrack(tracks[i]);
     }
   }
 
@@ -384,7 +389,7 @@
   audio.addEventListener('ended', () => {
     const last = current && tracks.indexOf(current) === tracks.length - 1 && !S.shuffle && S.repeat === 'off';
     if (last) luciel.playlistFinished(); else luciel.trackFinished();
-    if (S.repeat === 'one') { audio.currentTime = 0; audio.play(); return; }
+    if (S.repeat === 'one') { audio.currentTime = 0; engine.play('repeat one'); return; }
     next(true);
   });
   audio.addEventListener('timeupdate', () => {
@@ -393,15 +398,71 @@
       current.counted = true; current.plays = (current.plays || 0) + 1; current.lastPlayed = Date.now(); persist(current); library.refresh();
     }
   });
+  // ---------------------------------------------------------- forgiving playback
+  // <audio> element  ->  WebAudio decodeAudioData (decoded to a WAV copy)  ->  the phone's own decoders (Android)
+  //  ->  a clear message and the next song. Never a silent stop.
   audio.addEventListener('error', () => {
     if (!current || !audio.getAttribute('src')) return;
-    const t = current;
-    t.supported = ''; if (t.meta) t.meta.unplayable = true;
-    updateRow(t);
-    toast(`Couldn’t decode “${displayTitle(t)}” — skipping`, 'warn');
-    luciel.failed();
-    if (++errorStreak < tracks.length) setTimeout(() => next(true), 350); else stop();
+    const t = current, at = audio.currentTime || 0;
+    if (!t.rescued && !t.rescueTried) { rescuePlay(t, at); return; }
+    giveUp(t, audio.error && audio.error.code === 2 ? 'the file could not be read' : 'its format isn’t supported on this device');
   });
+  function giveUp(t, why) {
+    t.failed = true; t.supported = '';
+    updateRow(t); luciel.failed();
+    DBG.add('skip', `${displayTitle(t)}: ${why}`);
+    if (++errorStreak < tracks.length) {
+      toast(`Can’t play “${displayTitle(t)}”: ${why}. Skipping to the next song.`, 'warn');
+      if (t === current) setTimeout(() => next(true), 600);
+    } else {
+      stop('no song in the queue can be played');
+      toast('None of the songs in the queue can be played on this device. Try MP3, M4A/AAC, FLAC, OGG/Opus or WAV files.', 'warn');
+    }
+  }
+  function wavBlob(buf) {
+    const ch = Math.min(2, buf.numberOfChannels), sr = buf.sampleRate, n = buf.length;
+    const out = new DataView(new ArrayBuffer(44 + n * ch * 2));
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+    str(0, 'RIFF'); out.setUint32(4, 36 + n * ch * 2, true); str(8, 'WAVE'); str(12, 'fmt '); out.setUint32(16, 16, true);
+    out.setUint16(20, 1, true); out.setUint16(22, ch, true); out.setUint32(24, sr, true); out.setUint32(28, sr * ch * 2, true);
+    out.setUint16(32, ch * 2, true); out.setUint16(34, 16, true); str(36, 'data'); out.setUint32(40, n * ch * 2, true);
+    const data = []; for (let c = 0; c < ch; c++) data.push(buf.getChannelData(c));
+    let o = 44;
+    for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) { const v = Math.max(-1, Math.min(1, data[c][i])); out.setInt16(o, v < 0 ? v * 0x8000 : v * 0x7fff, true); o += 2; }
+    return new Blob([out.buffer], { type: 'audio/wav' });
+  }
+  async function decodeWithWebAudio(t) {
+    const L = window.LucielLazy;
+    const file = L && L.isLazy(t.file) ? await L.materialize(t.file) : t.file;
+    const bytes = await file.arrayBuffer();
+    const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const ctx = engine.ensure() || (AC && new AC(2, 44100, 44100));
+    if (!ctx) throw new Error('no WebAudio');
+    const buf = await new Promise((res, rej) => { const p = ctx.decodeAudioData(bytes, res, rej); if (p && p.then) p.then(res, rej); });
+    return URL.createObjectURL(wavBlob(buf));
+  }
+  async function rescuePlay(t, at = 0) {
+    t.rescueTried = true;
+    const name = displayTitle(t);
+    DBG.add('fallback', `${name}: the audio element can’t play it (error ${audio.error ? audio.error.code : '?'}) – decoding it another way`);
+    toast(`Preparing “${name}” in a compatible format…`);
+    let url = null, how = '';
+    try { url = await decodeWithWebAudio(t); how = 'WebAudio decoder'; } catch (e) { DBG.add('fallback', `${name}: WebAudio decode failed (${e && (e.message || e.name) || e})`); }
+    if (!url && window.LucielAndroidBridge && window.LucielAndroidBridge.decodeNative && /^(content|file):/.test(t.nativePath || (t.file && t.file.__nativePath) || '')) {
+      try { url = await window.LucielAndroidBridge.decodeNative(t.nativePath || t.file.__nativePath); how = 'Android decoder'; } catch (e) { DBG.add('fallback', `${name}: Android decoder failed (${e && e.message || e})`); }
+    }
+    if (current !== t) return;                       // the user moved on meanwhile
+    if (!url) return giveUp(t, 'its format isn’t supported on this device');
+    t.rescued = url; t.supported = 'rescued'; updateRow(t);
+    DBG.add('fallback', `${name}: playing a decoded copy (${how})`);
+    audio.src = url;
+    if (at > 0) audio.addEventListener('loadedmetadata', () => { try { audio.currentTime = at; } catch (e) {} }, { once: true });
+    engine.play('fallback copy');
+  }
+  engine.onPlayError = (e) => {
+    if (e && e.name === 'NotAllowedError') toast('Tap ▶ to start the music (this device blocked automatic playback)', 'warn');
+    // NotSupportedError also fires the element's 'error' event -> the fallback chain above handles it
+  };
 
   function setState(st) {
     document.body.classList.toggle('is-playing', st === 'play');
@@ -558,7 +619,7 @@
   if ('mediaSession' in navigator) {
     const ms = navigator.mediaSession;
     const h = (a, f) => { try { ms.setActionHandler(a, f); } catch (e) {} };
-    h('play', play); h('pause', () => audio.pause()); h('stop', stop);
+    h('play', play); h('pause', () => engine.pauseFor('system media controls (keyboard / headset / OS)')); h('stop', () => stop('system media controls: stop'));
     h('previoustrack', prev); h('nexttrack', () => next());
     h('seekbackward', (d) => { audio.currentTime = Math.max(0, audio.currentTime - (d.seekOffset || 10)); });
     h('seekforward', (d) => { audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + (d.seekOffset || 10)); });
@@ -751,7 +812,7 @@
     document.body.classList.add('desktop', 'desktop-' + NATIVE.platform);
     NATIVE.onOpenPaths && NATIVE.onOpenPaths((paths) => nativeOpen(paths, { playFirst: true }));
     NATIVE.onCommand && NATIVE.onCommand((cmd) => {
-      if (cmd === 'toggle') togglePlay(); else if (cmd === 'next') next(); else if (cmd === 'prev') prev(); else if (cmd === 'stop') stop(); else if (cmd === 'mini') toggleMini();
+      if (cmd === 'toggle') togglePlay(); else if (cmd === 'next') next(); else if (cmd === 'prev') prev(); else if (cmd === 'stop') stop('mini player: stop'); else if (cmd === 'mini') toggleMini();
     });
     const report = () => NATIVE.setState && NATIVE.setState({ playing: !audio.paused, title: current ? displayTitle(current) : '', artist: current ? displayArtist(current) : '' });
     ['play', 'pause', 'ended', 'loadedmetadata'].forEach((ev) => audio.addEventListener(ev, report));
@@ -1105,6 +1166,24 @@
   function closeOverlays() { document.querySelectorAll('.overlay').forEach((o) => { o.classList.remove('open'); o.hidden = true; }); }
   $('btnTheme').onclick = () => openOverlay('themeOverlay');
   $('btnKeys').onclick = () => openOverlay('keysOverlay');
+  // ---- playback debug log viewer (Settings > Debug log on phones, theme menu / Ctrl+Shift+D on desktop)
+  const debugText = () => { try { if (window.LucielAndroid && window.LucielAndroid.debugLog) return window.LucielAndroid.debugLog() || DBG.text(); } catch (e) {} return DBG.text(); };
+  function openDebugLog() {
+    closeOverlays();
+    const v = (window.AeroAmp && window.AeroAmp.version) || '';
+    $('dbgText').textContent = `Luciel ${v} · ${navigator.userAgent}\n` + (debugText() || '(nothing logged yet)');
+    openOverlay('debugOverlay');
+    requestAnimationFrame(() => { const p = $('dbgText'); p.scrollTop = p.scrollHeight; });
+  }
+  $('btnDebugLog').onclick = openDebugLog;
+  $('dbgRefresh').onclick = openDebugLog;
+  $('dbgClear').onclick = () => { DBG.clear(); try { window.LucielAndroid && window.LucielAndroid.clearDebugLog && window.LucielAndroid.clearDebugLog(); } catch (e) {} $('dbgText').textContent = '(cleared)'; };
+  $('dbgCopy').onclick = async () => {
+    const txt = $('dbgText').textContent;
+    try { await navigator.clipboard.writeText(txt); toast('Debug log copied'); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents($('dbgText')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); try { document.execCommand('copy'); toast('Debug log copied'); } catch (e2) { toast('Select the text and copy it', 'warn'); } }
+  };
+  document.addEventListener('keydown', (e) => { if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) { e.preventDefault(); openDebugLog(); } });
   document.querySelectorAll('.overlay:not(.edit-overlay):not(.ask-overlay)').forEach((o) => o.addEventListener('click', (e) => { if (e.target === o || e.target.closest('[data-dismiss]')) closeOverlays(); }));
   $('optBubbles').addEventListener('change', (e) => { S.bubbles = e.target.checked; document.body.classList.toggle('no-anim', !S.bubbles); applyMascotOpts(); save(); });
   $('optRemember').addEventListener('change', (e) => {
@@ -1412,6 +1491,6 @@
 
   // test/debug hook
   window.Luciel.app = window.AeroAmp = { packs: packsUI, mini: { toggle: toggleMini, open: openMiniOverlay, close: closeMini, popOut: popOutMini, state: miniState, cmd: miniCmd, get overlay() { return MINI.overlay; }, get pip() { return MINI.pip; }, get isOpen() { return miniIsOpen(); } }, nativeOpen, library, editor, lib, editTracks, playList, enqueue, removeFromLibrary, luciel, tracker, setScene, toggleFavorite, addFiles, applyTheme, applyPreset, get settings() { return S; }, get tracks() { return tracks; }, get current() { return current; }, engine, playTrack, next, prev, THEMES, setVizMode,
-    api: libApi, togglePlay, play, pause, stop, setShuffle, cycleRepeat, cycleViz, stepScene, sceneIds, setVolume, fmt, title: displayTitle, artist: displayArtist, fallbackCover, PALETTES, openOverlay, closeOverlays, toast, save, emit };
+    openDebugLog, debugText, api: libApi, togglePlay, play, pause, stop, setShuffle, cycleRepeat, cycleViz, stepScene, sceneIds, setVolume, fmt, title: displayTitle, artist: displayArtist, fallbackCover, PALETTES, openOverlay, closeOverlays, toast, save, emit };
   init();
 })();

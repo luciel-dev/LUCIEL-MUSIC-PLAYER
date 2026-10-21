@@ -19,6 +19,17 @@ class Prefs(ctx: Context) {
     var overlayX: Int get() = sp.getInt("overlayX", -1); set(v) = sp.edit().putInt("overlayX", v).apply()
     var overlayY: Int get() = sp.getInt("overlayY", -1); set(v) = sp.edit().putInt("overlayY", v).apply()
     var overlayCollapsed: Boolean get() = sp.getBoolean("collapsed", false); set(v) = sp.edit().putBoolean("collapsed", v).apply()
+    /** Spotify overlay card: "compact" | "large" | "bubble" (same modes as Luciel's own floater) */
+    var overlayMode: String
+        get() = sp.getString("overlayMode", null) ?: if (overlayCollapsed) "bubble" else "compact"
+        set(v) { val m = if (v in OVERLAY_MODES) v else "compact"; sp.edit().putString("overlayMode", m).putBoolean("collapsed", m == "bubble").apply(); if (m != "bubble") overlayLastMode = m }
+    /** card mode to go back to when the bubble is tapped */
+    var overlayLastMode: String get() = sp.getString("overlayLast", "compact") ?: "compact"; set(v) = sp.edit().putString("overlayLast", v).apply()
+    var overlayLargeDp: Int get() = sp.getInt("overlayLargeDp", 290); set(v) = sp.edit().putInt("overlayLargeDp", v.coerceIn(220, 420)).apply()
+    /** has the user been told how to bring the closed card back */
+    var overlayCloseHintShown: Boolean get() = sp.getBoolean("overlayCloseHint", false); set(v) = sp.edit().putBoolean("overlayCloseHint", v).apply()
+    /** asked for the beat-sync (RECORD_AUDIO) permission at least once */
+    var micAsked: Boolean get() = sp.getBoolean("micAsked", false); set(v) = sp.edit().putBoolean("micAsked", v).apply()
     var overlayOpacity: Int get() = sp.getInt("opacity", 100); set(v) = sp.edit().putInt("opacity", v.coerceIn(30, 100)).apply()
     /** "auto" or a scene id from art/scenes.json */
     var overlayScene: String get() = sp.getString("overlayScene", "auto") ?: "auto"; set(v) = sp.edit().putString("overlayScene", v).apply()
@@ -47,5 +58,6 @@ class Prefs(ctx: Context) {
         @Volatile private var inst: Prefs? = null
         fun get(ctx: Context): Prefs = inst ?: synchronized(this) { inst ?: Prefs(ctx).also { inst = it } }
         const val SPOTIFY = "com.spotify.music"
+        val OVERLAY_MODES = listOf("compact", "large", "bubble")
     }
 }

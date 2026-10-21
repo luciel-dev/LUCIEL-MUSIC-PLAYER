@@ -130,3 +130,12 @@ body.dropping .drop-overlay { opacity: 1; }
 .classic-only { display: none !important; }
 .tb-classic-title { display: none; }
 .eqbars { display: none; }
+
+/* playback debug log */
+.dbg-open { margin-top: 10px; }
+.theme-menu.dbg { width: min(720px, calc(100vw - 32px)); }
+.dbg-hint { margin: 0 0 8px; font-size: 13px; color: var(--text-2); }
+.dbg-text { margin: 0; max-height: min(52vh, 460px); overflow: auto; padding: 10px; border-radius: 8px; background: rgba(0,0,0,.55); color: #d7f5d0; font: 11.5px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text; }
+.dbg-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+body.m-ui .dbg-text { max-height: 50vh; }
+body.m-ui .dbg-btns .pbtn { min-height: 44px; flex: 1; }

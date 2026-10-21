@@ -138,6 +138,22 @@ class WebBridge(private val act: MainActivity) {
     @JavascriptInterface fun systemBars(bg: String, lightIcons: Boolean) = main.post { act.setBars(bg, lightIcons) }
     @JavascriptInterface fun haptic() = main.post { act.window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY) }
     @JavascriptInterface fun toast(msg: String) = main.post { android.widget.Toast.makeText(act, msg, android.widget.Toast.LENGTH_SHORT).show() }
+    /** last playback fallback: decode with the phone's codecs into a cached WAV the page can play */
+    @JavascriptInterface fun decodeAudio(id: Int, uri: String) = io.execute {
+        DebugLog.add("native", "decoding with the phone's decoder: $uri")
+        try {
+            val f = AudioDecoder.toWav(act, Uri.parse(uri))
+            DebugLog.add("native", "decoded copy ready (${f.length() / 1024} KB)")
+            resolve(id, true, JSONObject.quote(LocalContent.mediaUrl(Uri.fromFile(f))))
+        } catch (e: Throwable) {
+            DebugLog.add("native", "phone decoder failed: ${e.message}")
+            resolve(id, false, JSONObject.quote(e.message ?: "decode failed"))
+        }
+    }
+    /** playback debug log (Settings > Debug log) */
+    @JavascriptInterface fun log(msg: String) = DebugLog.add("web", msg.take(400))
+    @JavascriptInterface fun debugLog(): String = DebugLog.text()
+    @JavascriptInterface fun clearDebugLog() = DebugLog.clear()
     @JavascriptInterface fun exitApp() = main.post { act.moveTaskToBack(true) }
 
     /** Luciel's own floating mini player: "show" = Pop out (then step aside so it floats over the home screen / other apps), "hide" = close */

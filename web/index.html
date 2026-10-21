@@ -299,7 +299,18 @@
     <div class="tm-foot">
       <label class="chk"><input type="checkbox" id="optBubbles" checked> Animated scene backdrop</label>
       <label class="chk"><input type="checkbox" id="optRemember" checked> Remember tracks between sessions</label>
+      <button class="pbtn dbg-open" id="btnDebugLog" type="button">Playback debug log…</button>
     </div>
+  </div>
+</div>
+
+<!-- Playback debug log (why did the music stop?) -->
+<div class="overlay" id="debugOverlay" hidden>
+  <div class="theme-menu dbg" role="dialog" aria-label="Playback debug log">
+    <div class="tm-head"><span>Playback debug log</span><button class="tb-btn" data-dismiss><svg><use href="#i-close"/></svg></button></div>
+    <p class="dbg-hint">Every play, pause and stop with its reason. If the music stops by itself, copy this and send it to us.</p>
+    <pre class="dbg-text" id="dbgText"></pre>
+    <div class="dbg-btns"><button class="pbtn primary" id="dbgCopy" type="button">Copy</button><button class="pbtn" id="dbgRefresh" type="button">Refresh</button><button class="pbtn" id="dbgClear" type="button">Clear</button></div>
   </div>
 </div>
 

@@ -38,37 +38,6 @@ object OverlayPolicy {
     }
 }
 
-/**
- * Audio-focus bookkeeping for the WebView player (pure: the service turns the returned commands into page commands).
- * Fixes: after a transient loss (phone call) we no longer think we still hold focus, so a play press during the call
- * asks again and stays paused if Android says no; a manual pause/play cancels the automatic resume.
- */
-class FocusLogic {
-    var hasFocus = false; private set
-    var resumeOnGain = false; private set
-
-    /** result of AudioManager.requestAudioFocus for a play; false = keep paused */
-    fun onRequest(granted: Boolean): Boolean { hasFocus = granted; if (granted) resumeOnGain = false; return granted }
-    /** does a play need a fresh focus request? */
-    fun needsRequest() = !hasFocus
-    /** the user (UI, notification, headset) paused: don't auto-resume later */
-    fun onUserPause() { resumeOnGain = false }
-
-    /** AudioManager focus change -> page commands */
-    fun onChange(change: Int, playing: Boolean): List<Pair<String, Long>> = when (change) {
-        LOSS -> { hasFocus = false; resumeOnGain = false; listOf("pause" to 0L) }
-        LOSS_TRANSIENT -> { hasFocus = false; resumeOnGain = playing || resumeOnGain; listOf("pause" to 0L) }
-        LOSS_TRANSIENT_CAN_DUCK -> listOf("duck" to 1L)
-        GAIN -> { hasFocus = true; val r = resumeOnGain; resumeOnGain = false; listOf("duck" to 0L) + (if (r) listOf("play" to 0L) else emptyList()) }
-        else -> emptyList()
-    }
-
-    companion object {
-        // android.media.AudioManager constants (kept here so the logic is testable without Android)
-        const val GAIN = 1; const val LOSS = -1; const val LOSS_TRANSIENT = -2; const val LOSS_TRANSIENT_CAN_DUCK = -3
-    }
-}
-
 /** Media3 seek commands -> page commands (Previous restarts the song after 3 s, like every player). */
 object SeekMap {
     // Player.COMMAND_* values

@@ -780,6 +780,7 @@
       ${and ? `<div class="m-sec">Floating player</div><div class="m-group m-pad">${tog('__autoFloater', 'Pop out when leaving the app', pr.autoFloater === true || pr.autoFloater === 'true', 'Shows the floating Luciel player over other apps while music plays')}</div>
         <div class="m-group">${navRow('__pop', IC.popout, 'Pop out now', null)}</div>
         <div class="m-sec">Phone</div><div class="m-group">${navRow('__phone', G_('☏'), 'Phone music, Spotify & permissions', null)}</div>` : ''}
+      <div class="m-sec">Help</div><div class="m-group">${navRow('__debug', G_('⚑'), 'Debug log', null, 'why did the music stop?')}</div>
       <div class="m-sec">About</div><div class="m-about">Luciel${pr.version ? ' ' + esc(pr.version) : ''} · ${A.lib.size} songs in the library</div>
       <div class="m-foot-space"></div>`;
     el.scrollTop = y;
@@ -793,6 +794,7 @@
       const id = go.dataset.go;
       if (id === '__packzip') $('packZipInput').click(); else if (id === '__packs') A.packs.openManager();
       else if (id === '__ext') window.LucielAndroidBridge.extMode(true); else if (id === '__eq') openEq();
+      else if (id === '__debug') A.openDebugLog();
       else if (id === '__pop') popOut(); else if (id === '__phone') window.LucielAndroidUI.openSheet();
     };
     const onChange = (e) => {

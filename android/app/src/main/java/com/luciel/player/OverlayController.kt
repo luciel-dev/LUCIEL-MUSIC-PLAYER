@@ -51,14 +51,14 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
     }
 
     /** settings changed / app went to background */
-    fun refresh() { main.post { view?.sceneId = prefs.overlayScene; view?.alpha = prefs.overlayOpacity / 100f; applySize(); onTrack(NowPlayingHub.current) } }
+    fun refresh() { main.post { view?.collapsed = prefs.overlayMode == "bubble"; view?.large = prefs.overlayMode == "large"; view?.sceneId = prefs.overlayScene; view?.alpha = prefs.overlayOpacity / 100f; applySize(); onTrack(NowPlayingHub.current) } }
 
-    private fun widthPx() = if (view?.collapsed == true) (64 * dp).toInt() else (prefs.overlaySizeDp * dp).toInt()
+    private fun widthPx() = when (prefs.overlayMode) { "bubble" -> (64 * dp).toInt(); "large" -> (prefs.overlayLargeDp * dp).toInt(); else -> (prefs.overlaySizeDp * dp).toInt() }
 
     private fun show() {
         if (view != null || !canShow()) return
         val v = LucielleCardView(ctx, assets, this)
-        v.collapsed = prefs.overlayCollapsed; v.sceneId = prefs.overlayScene; v.alpha = prefs.overlayOpacity / 100f
+        v.collapsed = prefs.overlayMode == "bubble"; v.large = prefs.overlayMode == "large"; v.sceneId = prefs.overlayScene; v.alpha = prefs.overlayOpacity / 100f
         v.track = NowPlayingHub.current
         val m = svc.resources.displayMetrics
         val p = WindowManager.LayoutParams(
@@ -104,13 +104,28 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
         prefs.overlayX = p.x; prefs.overlayY = p.y
     }
     override fun onResize(dw: Int) { val p = lp ?: return; val nw = (p.width + dw).coerceIn((140 * dp).toInt(), (380 * dp).toInt()); p.width = nw; try { wm.updateViewLayout(view, p) } catch (_: Throwable) {} }
-    override fun onResizeEnd() { val p = lp ?: return; prefs.overlaySizeDp = (p.width / dp).toInt(); clampToScreen() }
+    override fun onResizeEnd() { val p = lp ?: return; val w = (p.width / dp).toInt(); if (prefs.overlayMode == "large") prefs.overlayLargeDp = w else prefs.overlaySizeDp = w; clampToScreen() }
     override fun onOpenApp() {
         svc.startActivity(Intent(svc, MainActivity::class.java).setAction(MainActivity.ACTION_EXT_MODE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
     }
     override fun onSettings() { svc.startActivity(Intent(svc, OverlaySettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    override fun onCollapse(collapsed: Boolean) { prefs.overlayCollapsed = collapsed; view?.collapsed = collapsed; applySize(); clampToScreen(); onDragEnd() }
-    override fun onClose() { dismissedKey = NowPlayingHub.current?.trackKey; hide() }
+    override fun onCollapse(collapsed: Boolean) { setMode(if (collapsed) "bubble" else prefs.overlayLastMode) }
+    override fun onToggleSize() { setMode(if (prefs.overlayMode == "large") "compact" else "large") }
+    private fun setMode(m: String) {
+        DebugLog.add("overlay", "Spotify card mode: $m")
+        val p = lp; val cx = if (p != null) p.x + p.width / 2 else 0
+        prefs.overlayMode = m; view?.collapsed = m == "bubble"; view?.large = m == "large"; applySize()
+        if (p != null) p.x = cx - p.width / 2            // grow / shrink around the card's centre (bubble then snaps to the nearer edge)
+        clampToScreen(); onDragEnd()
+    }
+    override fun onOpenPlayer() { NowPlayingHub.openPlayerApp(svc) }
+    override fun onClose() {
+        dismissedKey = NowPlayingHub.current?.trackKey; hide()
+        if (!prefs.overlayCloseHintShown) {
+            prefs.overlayCloseHintShown = true
+            android.widget.Toast.makeText(svc, "Hidden for this song. It comes back on the next one – turn it off for good in Luciel › Spotify overlay.", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
 
     companion object {
         @Volatile var instance: OverlayController? = null

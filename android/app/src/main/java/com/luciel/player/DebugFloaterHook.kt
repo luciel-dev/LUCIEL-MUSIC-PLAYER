@@ -32,6 +32,15 @@ object DebugFloaterHook {
     }
 
     private fun handle(ctx: Context, i: Intent) {
+        // `--es decode content://...` : run the native decoder fallback (AudioDecoder) on a file and log the result
+        i.getStringExtra("decode")?.let { u ->
+            Thread {
+                val t0 = SystemClock.elapsedRealtime()
+                try { val f = AudioDecoder.toWav(ctx, android.net.Uri.parse(u)); DebugLog.add("debug", "decode OK $u -> ${f.name} ${f.length()} B in ${SystemClock.elapsedRealtime() - t0} ms") }
+                catch (e: Throwable) { DebugLog.add("debug", "decode FAILED $u: ${e.message}") }
+            }.start()
+            return
+        }
         active = true
         val pal = i.getStringExtra("palette") ?: "aero"
         val skin = i.getStringExtra("skin") ?: "aero"

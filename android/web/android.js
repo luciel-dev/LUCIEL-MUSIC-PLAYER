@@ -105,15 +105,25 @@
   // commands from the notification / lock screen / headset / audio focus
   // a play press with nothing loaded (headset button, notification, Bluetooth car kit) starts the queue; it never opens the file picker
   const playFromIdle = () => { if (A.current) { A.togglePlay(); return; } if (A.tracks.length) A.playTrack(A.tracks[0]); };
+  const PAUSE_WHY = 'Android: pause from the notification / lock screen / headset / floater / unplugged headphones (see native lines)';
   B.cmd = (cmd, arg) => {
+    if (cmd !== 'duck') window.LucielDebug && window.LucielDebug.add('native', `command ${cmd}${arg ? ' ' + arg : ''}`);
     if (cmd === 'play') { if (audio.paused) playFromIdle(); }
-    else if (cmd === 'pause') { transitionUntil = 0; if (!audio.paused) audio.pause(); }
-    else if (cmd === 'toggle') { if (audio.paused) playFromIdle(); else { transitionUntil = 0; audio.pause(); } }
+    else if (cmd === 'pause') { transitionUntil = 0; A.engine.pauseFor(PAUSE_WHY); }
+    else if (cmd === 'toggle') { if (audio.paused) playFromIdle(); else { transitionUntil = 0; A.engine.pauseFor(PAUSE_WHY); } }
     else if (cmd === 'next') A.next();
     else if (cmd === 'prev') A.prev();
     else if (cmd === 'seek') { try { audio.currentTime = (arg || 0) / 1000; } catch (e) {} }
     else if (cmd === 'duck') { if (A.engine.setDucked) A.engine.setDucked(!!arg); }
     setTimeout(() => report(), 120);
+  };
+
+  // last fallback for songs the WebView can't decode: the phone's own decoders turn it into a WAV copy
+  B.decodeNative = async (uri) => {
+    toast('Converting with the phone’s own decoder…');
+    const url = await B.call('decodeAudio', uri);
+    if (!url) throw new Error('no decoder for this format on this phone');
+    return url;
   };
 
   // ------------------------------------------------------------------ phone library (MediaStore)
@@ -234,7 +244,7 @@
     const st = EXT.state;
     if (!st || !st.active) { if (user) toast(perms.listener ? 'Play something in Spotify first' : 'Turn on “Spotify & other players” first', 'warn'); if (user && !perms.listener) openSheet(); return; }
     if (EXT.on) return;
-    if (user && !audio.paused) audio.pause();
+    if (user && !audio.paused) A.engine.pauseFor('user switched to Spotify mode');
     EXT.on = true; body.classList.add('ext-mode');
     savedScene = A.settings.scene;
     A.engine.ensure && A.engine.ensure();
@@ -273,7 +283,7 @@
     }
     applyTint(st); renderPanel();
   }
-  B.ext = (st) => onExt(st, false);
+  B.ext = (st) => { onExt(st, false); if (!ov.hidden) renderSheet(); };
   B.extMode = (on) => { if (on) { try { onExt(JSON.parse(N.extState()), false); } catch (e) {} enterExt(true); } else exitExt(true); };
   B.visible = (v) => { appVisible = v; if (v && EXT.on && !pollRaf) pollRaf = requestAnimationFrame(poll); if (v) { try { onExt(JSON.parse(N.extState()), false); } catch (e) {} } };
   audio.addEventListener('play', () => { if (EXT.on) exitExt(false); });
@@ -374,6 +384,13 @@
   function openSheet() { renderSheet(); ov.hidden = false; requestAnimationFrame(() => ov.classList.add('open')); }
   function closeSheet() { ov.classList.remove('open'); ov.hidden = true; }
   const yes = (b) => b ? '<b class="and-ok">✓ on</b>' : '<b class="and-off">off</b>';
+  // plain-words status of the outside player for the sheet
+  function extStatus() {
+    const st = EXT.state;
+    if (!perms.listener) return 'Spotify: not connected yet – open <b>Spotify overlay setup</b> and do step 1.';
+    if (st && st.active) return `${esc(st.app || 'Spotify')} ${st.playing ? 'is playing' : 'is paused'}${st.title ? ': <b>' + esc(st.title) + '</b>' + (st.artist ? ' · ' + esc(st.artist) : '') : ''}`;
+    return 'Spotify isn’t playing – start a song in Spotify and it shows up here.';
+  }
   function renderSheet() {
     const host = $('andBody'); if (!host) return;
     const nPhone = [...A.lib.values()].filter((t) => t.nativePath && /^content:/.test(t.nativePath)).length;
@@ -382,6 +399,8 @@
         <div class="and-row"><span>Music access ${yes(perms.audio)} · ${nPhone} song${nPhone === 1 ? '' : 's'} in the library</span></div>
         <div class="tm-row"><button class="pbtn" data-a="scan">${scanning ? 'SCANNING…' : 'SCAN PHONE MUSIC'}</button><button class="pbtn" data-a="files">ADD FILES</button><button class="pbtn" data-a="folder">ADD FOLDER</button></div></div>
       <div class="tm-section"><div class="tm-label">Spotify &amp; other players</div>
+        <div class="and-row and-status"><span>${extStatus()}</span></div>
+        <div class="tm-row"><button class="pbtn primary" data-a="overlaySettings">SPOTIFY OVERLAY SETUP</button></div>
         <div class="and-row"><span>See what's playing (Notification access) ${yes(perms.listener)}</span>${perms.listener ? '' : '<button class="pbtn" data-a="listener">TURN ON</button>'}</div>
         <div class="and-row"><span>Floating Lucielle over other apps ${yes(perms.overlay)}</span>${perms.overlay ? '<button class="pbtn" data-a="overlaySettings">SETTINGS</button>' : '<button class="pbtn" data-a="overlay">TURN ON</button>'}</div>
         <div class="and-row"><span>Beat detection (system visualizer, shown as “Microphone”) ${yes(perms.mic)}</span>${perms.mic ? '' : '<button class="pbtn" data-a="app">ALLOW</button>'}</div>

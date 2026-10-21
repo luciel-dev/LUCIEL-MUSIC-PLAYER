@@ -30,6 +30,8 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
         fun onSettings()
         fun onCollapse(collapsed: Boolean)
         fun onClose()
+        fun onToggleSize()
+        fun onOpenPlayer()
     }
 
     var collapsed = false
@@ -51,6 +53,9 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
 
     // hit boxes (view coords)
     private val btnPrev = RectF(); private val btnPlay = RectF(); private val btnNext = RectF()
+    private val btnSize = RectF(); private val headTap = RectF()
+    /** "large" card mode (bigger default width); only changes the size button's icon */
+    var large = false; set(v) { field = v; invalidate() }
     private val btnCollapse = RectF(); private val btnClose = RectF(); private val btnTempo = RectF(); private val handle = RectF()
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -192,13 +197,25 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
         val bs = 24 * dp
         btnClose.set(W - pad - bs, pad, W - pad, pad + bs)
         btnCollapse.set(btnClose.left - bs - 6 * dp, pad, btnClose.left - 6 * dp, pad + bs)
-        circle(c, btnCollapse, 0x55000000); circle(c, btnClose, 0x55000000)
+        // narrow card: the size button sits under the close button so the title keeps its room
+        if (W < 230 * dp) btnSize.set(btnClose.left, btnClose.bottom + 6 * dp, btnClose.right, btnClose.bottom + 6 * dp + bs)
+        else btnSize.set(btnCollapse.left - bs - 6 * dp, pad, btnCollapse.left - 6 * dp, pad + bs)
+        circle(c, btnSize, 0x55000000); circle(c, btnCollapse, 0x55000000); circle(c, btnClose, 0x55000000)
+        // size button: two corner arrows (grow) or a smaller square (shrink)
+        run {
+            paint.color = Color.WHITE; paint.strokeWidth = 1.8f * dp; paint.strokeCap = Paint.Cap.ROUND
+            val q = if (large) 3.5f * dp else 5.5f * dp; val cxs = btnSize.centerX(); val cys = btnSize.centerY()
+            c.drawLine(cxs - q, cys - q, cxs - q, cys - q + 4 * dp, paint); c.drawLine(cxs - q, cys - q, cxs - q + 4 * dp, cys - q, paint)
+            c.drawLine(cxs + q, cys + q, cxs + q, cys + q - 4 * dp, paint); c.drawLine(cxs + q, cys + q, cxs + q - 4 * dp, cys + q, paint)
+        }
         paint.color = Color.WHITE; paint.strokeWidth = 2 * dp; paint.strokeCap = Paint.Cap.ROUND
         c.drawLine(btnCollapse.centerX() - 6 * dp, btnCollapse.centerY(), btnCollapse.centerX() + 6 * dp, btnCollapse.centerY(), paint)
         val k = 5 * dp
         c.drawLine(btnClose.centerX() - k, btnClose.centerY() - k, btnClose.centerX() + k, btnClose.centerY() + k, paint)
         c.drawLine(btnClose.centerX() + k, btnClose.centerY() - k, btnClose.centerX() - k, btnClose.centerY() + k, paint)
-        val tw = btnCollapse.left - 6 * dp - x
+        val right = if (W < 230 * dp) btnCollapse.left else btnSize.left
+        val tw = right - 6 * dp - x
+        headTap.set(0f, 0f, right - 3 * dp, pad + 38 * dp)          // cover + title: opens Spotify
         text.textSize = 13 * dp; sub.textSize = 11 * dp
         val title = t?.title?.ifBlank { null } ?: "Nothing playing"
         val artist = listOfNotNull(t?.artist?.ifBlank { null }, t?.appLabel).joinToString(" · ")
@@ -288,6 +305,8 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
             btnPrev.contains(x, y) -> NowPlayingHub.prev()
             btnCollapse.contains(x, y) -> host.onCollapse(true)
             btnClose.contains(x, y) -> host.onClose()
+            btnSize.contains(x, y) -> host.onToggleSize()
+            headTap.contains(x, y) -> host.onOpenPlayer()
             btnTempo.contains(x, y) -> { NowPlayingHub.beats.tap(); performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP) }
             else -> host.onOpenApp()
         }

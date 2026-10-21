@@ -11,6 +11,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import androidx.webkit.WebViewAssetLoader
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.io.ByteArrayOutputStream
 import java.io.FileInputStream
 import java.io.FilterInputStream
@@ -33,7 +34,12 @@ class LocalContent(private val ctx: Context) {
         val path = url.path ?: "/"
         return try {
             when {
-                path == "/_n/c" -> content(Uri.parse(url.getQueryParameter("u") ?: return notFound()), req.requestHeaders)
+                path == "/_n/c" -> {
+                    val u = Uri.parse(url.getQueryParameter("u") ?: return notFound())
+                    // file:// only for the decoded copies made by AudioDecoder, nothing else in the app's storage
+                    if (u.scheme == "file" && !(u.path ?: "").let { p -> File(p).canonicalPath.startsWith(AudioDecoder.dir(ctx).canonicalPath + File.separator) }) return notFound()
+                    content(u, req.requestHeaders)
+                }
                 path == "/_n/art" -> art(Uri.parse(url.getQueryParameter("u") ?: return notFound()))
                 path == "/_n/ext-art" -> NowPlayingHub.artJpeg?.let { ok("image/jpeg", ByteArrayInputStream(it), it.size.toLong(), noCache = true) } ?: notFound()
                 path == "/" || path.isEmpty() -> assets.shouldInterceptRequest(Uri.parse("https://$HOST/www/index.html"))
