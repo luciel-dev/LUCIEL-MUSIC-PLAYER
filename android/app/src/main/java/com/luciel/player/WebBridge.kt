@@ -218,6 +218,13 @@ class WebBridge(private val act: MainActivity) {
         main.post { SpotifyConnect.launch(act, url) }
         return "opened"
     }
+    /** wake the phone's Spotify in the background (see NowPlayingHub.wakeSpotify) */
+    @JavascriptInterface fun spotifyWake(): String { val r = NowPlayingHub.wakeSpotify(act.applicationContext); DebugLog.add("spotify", "wake Spotify: $r"); return r }
+    /** names this phone may have in Spotify's device list */
+    @JavascriptInterface fun spotifyDeviceNames(): String = org.json.JSONArray().apply {
+        try { android.provider.Settings.Global.getString(act.contentResolver, android.provider.Settings.Global.DEVICE_NAME)?.let { put(it) } } catch (_: Exception) {}
+        put(Build.MODEL); put(Build.MANUFACTURER + " " + Build.MODEL)
+    }.toString()
     @JavascriptInterface fun spotifyDisconnect() { spotify.disconnect(); DebugLog.add("spotify", "disconnected") }
     /** resolves {status, body, retryAfter} (body = parsed JSON or null) */
     @JavascriptInterface fun spotifyApi(id: Int, method: String, path: String, body: String) = net.execute {

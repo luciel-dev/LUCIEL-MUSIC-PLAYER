@@ -15,6 +15,7 @@ async function run(W, H) {
   const outside = [];
   await ctx.route((u) => !/^(https?:\/\/127\.0\.0\.1|data:|blob:)/.test(u.toString()), (r) => { outside.push(r.request().url()); r.abort(); });
   const ev = (f, a) => page.evaluate(f, a);
+  await page.evaluate(() => { window.LucielSpotify._api.wakeWait = 60; });
   const shot = async (n) => { if (SHOTS && W === 412) await page.screenshot({ path: `${SHOTS}/1.1.4-${n}.png` }); };
   const calls = () => ev(() => window.__calls.slice());
   const api = () => ev(() => window.__spCalls.slice());
@@ -132,18 +133,23 @@ async function run(W, H) {
   let played = null; await ev(() => { window.__spPlay = (b) => { window.__played = b; return { status: 204, body: null }; }; window.__calls.length = 0; document.querySelectorAll('#spList .sp-row')[2].click(); }); await wait(page, 300);
   played = await ev(() => window.__played);
   ok(played && played.context_uri === 'spotify:playlist:p1' && played.offset && played.offset.uri === 'spotify:track:tp12', `[${tag}] tapping a song plays it in the playlist (PUT /me/player/play context_uri + offset)`);
+  ok(await ev(() => document.getElementById('mSpotify').dataset.page === 'now'), `[${tag}] …and lands on Luciel's own Now Playing`);
+  await ev(() => window.LucielMobile.back()); await wait(page, 200);
   ok(await ev(() => window.Luciel.app.engine.audio.paused && !!window.Luciel.app.current), `[${tag}] …and pauses Luciel's own music, which stays loaded`);
   ok(!(await calls()).some((c) => c.startsWith('link:')), `[${tag}] Premium: no jump to the Spotify app`);
   await ev(() => { window.__played = null; document.querySelector('#mSpotify [data-act="playCtx"]').click(); }); await wait(page, 200);
   ok((await ev(() => window.__played && window.__played.context_uri)) === 'spotify:playlist:p1', `[${tag}] Play on the playlist header plays the whole playlist`);
+  await ev(() => { if (document.getElementById('mSpotify').dataset.page === 'now') window.LucielMobile.back(); }); await wait(page, 200);
   // Free account: 403 PREMIUM_REQUIRED -> deep link with a friendly note
   await ev(() => { window.__spPlay = () => ({ status: 403, body: { error: { status: 403, message: 'Player command failed: Premium required', reason: 'PREMIUM_REQUIRED' } } }); window.__calls.length = 0; document.querySelectorAll('#spList .sp-row')[0].click(); }); await wait(page, 300);
   ok((await calls()).some((c) => c.startsWith('link:spotify:track:tp10|https://open.spotify.com/track/tp10')), `[${tag}] Free account: falls back to opening the song in Spotify`);
+  await ev(() => { if (document.getElementById('mSpotify').dataset.page === 'now') window.LucielMobile.back(); }); await wait(page, 200);
   // nothing active: 404 NO_ACTIVE_DEVICE -> wake the phone's device and retry
   await ev(() => { let n = 0; window.__spDevices = [{ id: 'dev-phone', is_active: false, type: 'Smartphone', name: 'Pixel' }]; window.__spPlay = (b) => (n++ ? (window.__played = b, { status: 204, body: null }) : { status: 404, body: { error: { status: 404, message: 'No active device', reason: 'NO_ACTIVE_DEVICE' } } }); window.__spCalls.length = 0; window.__calls.length = 0; document.querySelectorAll('#spList .sp-row')[1].click(); }); await wait(page, 400);
   const dv = await api();
   ok(dv.includes('GET /me/player/devices') && dv.some((c) => c === 'PUT /me/player/play?device_id=dev-phone') && !(await calls()).some((c) => c.startsWith('link:')), `[${tag}] no active device: picks the phone and retries`);
-  await ev(() => { window.__spPlay = null; window.__spDevices = []; });
+  await ev(() => { window.__spPlay = null; window.__spDevices = [{ id: 'phone1', name: 'Pixel Test', type: 'Smartphone', is_active: false }]; });
+  await ev(() => { if (document.getElementById('mSpotify').dataset.page === 'now') window.LucielMobile.back(); }); await wait(page, 200);
   await ev(() => window.LucielMobile.back()); await wait(page, 200);
   // a playlist you don't own (Feb-2026 rule): header + play + friendly note
   await ev(() => document.querySelectorAll('#spPls .sp-card')[1].click()); await wait(page, 500);
@@ -172,9 +178,10 @@ async function run(W, H) {
   await shot('spotify-search');
   await ev(() => document.querySelector('#mSpotify [data-filter="songs"]').click()); await wait(page, 200);
   ok(await ev(() => document.querySelectorAll('#spResults [data-it^="track:"]').length === 10), `[${tag}] Songs filter shows all 10 songs`);
-  await ev(() => { window.__played = null; window.__spPlay = (b) => { window.__played = b; return { status: 204, body: null }; }; document.querySelector('#spResults [data-it^="track:"]').click(); }); await wait(page, 200);
+  await ev(() => { window.__played = null; window.__spPlay = (b) => { window.__played = b; return { status: 204, body: null }; }; document.querySelector('#spResults [data-it^="track:"] .sp-txt b').click(); }); await wait(page, 300);
   ok((await ev(() => window.__played && window.__played.uris && window.__played.uris[0])) === 'spotify:track:tS0', `[${tag}] tapping a search result plays it`);
   await ev(() => { window.__spPlay = null; window.LucielMobile.back(); }); await wait(page, 200);
+  await ev(() => window.LucielMobile.back()); await wait(page, 200);
 
   // ================= 9. sign-in ends / disconnect
   await ev(() => window.LucielSpotify.openAccount()); await wait(page, 200);

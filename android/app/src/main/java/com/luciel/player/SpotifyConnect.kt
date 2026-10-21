@@ -119,8 +119,14 @@ class SpotifyClient(private val kv: Kv, private val http: Http, private val now:
 
     fun disconnect() { listOf("access", "refresh", "expires", "scope", "pkce_verifier", "pkce_state").forEach { kv.put(it, null) } }
 
+    /** scopes this version needs that the saved sign-in doesn't have (an older sign-in -> one-tap reconnect) */
+    fun missingScopes(): List<String> {
+        val g = kv.get("scope")?.split(' ')?.filter { it.isNotBlank() }?.toSet() ?: return emptyList()   // unknown: assume fine
+        if (g.isEmpty()) return emptyList()
+        return SCOPES.filter { it !in g }
+    }
     fun status(): JSONObject = JSONObject().put("clientId", clientId).put("validId", validClientId(clientId)).put("connected", connected)
-        .put("redirect", REDIRECT).put("scope", kv.get("scope") ?: "")
+        .put("redirect", REDIRECT).put("scope", kv.get("scope") ?: "").put("missing", org.json.JSONArray(if (connected) missingScopes() else emptyList()))
 }
 
 /** the real network: https to Spotify's account + API hosts only */

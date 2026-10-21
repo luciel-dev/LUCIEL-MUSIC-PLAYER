@@ -81,4 +81,17 @@ class SpotifyConnectTest {
         c.clientId = "ffffffffffffffffffffffffffffffff"; assertFalse(c.connected)   // another app -> sign in again
         val st = JSONObject(c.status().toString()); assertEquals("luciel://spotify-callback", st.getString("redirect")); assertFalse(st.getBoolean("connected"))
     }
+    @Test fun missingPlaybackScopesAskForReconnect() {
+        val kv = MapKv(); val c = SpotifyClient(kv, FakeSpotify()); c.clientId = ID; kv.put("refresh", "R")
+        kv.put("scope", "playlist-read-private user-library-read")          // an older / partial grant
+        assertTrue(c.missingScopes().containsAll(listOf("user-modify-playback-state", "user-read-playback-state")))
+        assertEquals(c.missingScopes().size, JSONObject(c.status().toString()).getJSONArray("missing").length())
+        kv.put("scope", SpotifyClient.SCOPES.joinToString(" ")); assertTrue(c.missingScopes().isEmpty())
+        kv.put("scope", null); assertTrue(c.missingScopes().isEmpty())     // unknown grant: don't nag
+        // player paths are allowed through the API gate
+        val net = FakeSpotify(); val c2 = SpotifyClient(kv, net); kv.put("access", "A"); kv.put("expires", (System.currentTimeMillis() + 3_600_000).toString())
+        net.next += HttpResp(204, ""); assertEquals(204, c2.api("PUT", "/me/player", """{"device_ids":["d"],"play":false}""").code)
+        net.next += HttpResp(204, ""); assertEquals(204, c2.api("POST", "/me/player/queue?uri=spotify%3Atrack%3Ax&device_id=d", null).code)
+        net.next += HttpResp(200, "{}"); assertEquals(200, c2.api("GET", "/artists/0TnOYISbd1XYRBk9myaseg/albums?include_groups=single&limit=20&offset=0", null).code)
+    }
 }

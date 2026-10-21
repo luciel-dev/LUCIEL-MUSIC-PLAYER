@@ -96,7 +96,7 @@
   // The native side owns the sign-in and the tokens (WebBridge.spotify*): this page only asks for API results.
   const REDIRECT = 'luciel://spotify-callback', DASH = 'https://developer.spotify.com/dashboard';
   const Api = {
-    st: {}, cache: new Map(),
+    st: {}, cache: new Map(), wakeWait: 750, noTopTracks: false,
     get has() { return typeof N.spotifyApi === 'function' && typeof N.spotifyStatus === 'function'; },
     read() { try { this.st = (this.has && JSON.parse(N.spotifyStatus())) || {}; } catch (e) { this.st = {}; } return this.st; },
     get on() { return this.has && !!this.st.connected; },
@@ -130,10 +130,19 @@
   // ones ("tracks", "track").
   const Norm = {
     playlist: (p) => (p && p.id ? { kind: 'playlist', id: p.id, uri: p.uri || 'spotify:playlist:' + p.id, name: p.name || 'Playlist', owner: (p.owner && (p.owner.display_name || p.owner.id)) || '', ownerId: (p.owner && p.owner.id) || '', total: ((p.items || p.tracks) || {}).total, img: imgOf(p.images), web: (p.external_urls && p.external_urls.spotify) || 'https://open.spotify.com/playlist/' + p.id } : null),
-    track: (t) => (t && (t.uri || t.id) ? { kind: 'track', id: t.id || '', uri: t.uri || (t.id ? 'spotify:track:' + t.id : ''), name: t.name || 'Unknown song', artist: (t.artists || []).map((a) => a && a.name).filter(Boolean).join(', ') || (t.show && t.show.name) || '', album: (t.album && t.album.name) || '', img: imgOf((t.album && t.album.images) || t.images, 64), dur: (t.duration_ms || 0) / 1000, local: !!t.is_local, web: (t.external_urls && t.external_urls.spotify) || (t.id ? 'https://open.spotify.com/track/' + t.id : '') } : null),
+    // al: the album when the track comes from /albums/{id}/tracks (those tracks carry no album of their own)
+    track: (t, al) => { if (!t || !(t.uri || t.id)) return null; const A_ = t.album || al || null; const ims = (A_ && A_.images) || t.images;
+      return { kind: 'track', id: t.id || '', uri: t.uri || (t.id ? 'spotify:track:' + t.id : ''), name: t.name || 'Unknown song',
+        artists: (t.artists || []).filter((a) => a && a.name).map((a) => ({ id: a.id || '', name: a.name })),
+        artist: (t.artists || []).map((a) => a && a.name).filter(Boolean).join(', ') || (t.show && t.show.name) || '',
+        album: (A_ && A_.name) || '', albumId: (A_ && A_.id) || '', albumUri: (A_ && (A_.uri || (A_.id && 'spotify:album:' + A_.id))) || '',
+        img: imgOf(ims, 64), big: imgOf(ims, 640), dur: (t.duration_ms || 0) / 1000, no: t.track_number || 0, disc: t.disc_number || 1, pop: t.popularity,
+        explicit: !!t.explicit, local: !!t.is_local, web: (t.external_urls && t.external_urls.spotify) || (t.id ? 'https://open.spotify.com/track/' + t.id : '') }; },
     entry: (e) => (e ? Norm.track(e.item || e.track) : null),
-    artist: (a) => (a && a.id ? { kind: 'artist', id: a.id, uri: a.uri || 'spotify:artist:' + a.id, name: a.name || '', img: imgOf(a.images, 160), web: (a.external_urls && a.external_urls.spotify) || 'https://open.spotify.com/artist/' + a.id } : null),
-    album: (a) => (a && a.id ? { kind: 'album', id: a.id, uri: a.uri || 'spotify:album:' + a.id, name: a.name || '', artist: (a.artists || []).map((x) => x && x.name).filter(Boolean).join(', '), img: imgOf(a.images, 160), web: (a.external_urls && a.external_urls.spotify) || 'https://open.spotify.com/album/' + a.id } : null),
+    // (followers / popularity were removed for Development Mode apps in Feb 2026: shown only if Spotify still sends them)
+    artist: (a) => (a && a.id ? { kind: 'artist', id: a.id, uri: a.uri || 'spotify:artist:' + a.id, name: a.name || '', img: imgOf(a.images, 160), big: imgOf(a.images, 640), genres: a.genres || [], followers: a.followers && a.followers.total, web: (a.external_urls && a.external_urls.spotify) || 'https://open.spotify.com/artist/' + a.id } : null),
+    album: (a) => (a && a.id ? { kind: 'album', id: a.id, uri: a.uri || 'spotify:album:' + a.id, name: a.name || '', type: a.album_type || '', year: String(a.release_date || '').slice(0, 4), date: a.release_date || '', total: a.total_tracks,
+      artists: (a.artists || []).filter((x) => x && x.name).map((x) => ({ id: x.id || '', name: x.name })), artist: (a.artists || []).map((x) => x && x.name).filter(Boolean).join(', '), img: imgOf(a.images, 300), big: imgOf(a.images, 640), web: (a.external_urls && a.external_urls.spotify) || 'https://open.spotify.com/album/' + a.id } : null),
     list: (arr, f) => (arr || []).map(f).filter((x) => x && (x.kind !== 'track' || (x.uri && !x.local))),
   };
   // every Web API item on screen, by "kind:id" (rows carry data-it)
@@ -141,34 +150,125 @@
   const reg = (x) => { const k = x.kind + ':' + (x.id || x.uri); Items.set(k, x); return k; };
   const linkOf = (x) => ({ app: x.uri || '', web: x.web || 'https://open.spotify.com/' });
 
-  /** play in Spotify through the Web API (Premium). Anything else -> the deep link, with a friendly note. */
-  async function playApi(body, fallback, label) {
-    vib();
+  // ---- 1.1.5: tap a song -> it plays on THIS phone's Spotify, and Luciel's own Now Playing view shows it (Spotify's UI
+  // stays closed). Steps (each in the Debug log): find the phone in Spotify Connect (/me/player/devices); if it isn't
+  // there, wake Spotify in the background (media session / media button) and look again; if nothing is active, transfer
+  // playback to it (PUT /me/player); start the song (PUT /me/player/play?device_id=…). Spotify's UI only as a last resort.
+  const PLAY_SCOPES = ['user-modify-playback-state', 'user-read-playback-state'];
+  const PHONE = (() => { try { return JSON.parse(N.spotifyDeviceNames ? N.spotifyDeviceNames() : '[]').map((x) => String(x || '').trim().toLowerCase()).filter(Boolean); } catch (e) { return []; } })();
+  function pickPhone(list) {
+    const ok = list.filter((d) => d && d.id && !d.is_restricted);
+    return ok.find((d) => PHONE.includes(String(d.name || '').trim().toLowerCase())) || ok.find((d) => /smartphone/i.test(d.type || '')) || null;
+  }
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const why = (r) => { const e = r && r.body && r.body.error; return e ? ` ${e.reason || ''} ${e.message || ''}`.replace(/\s+/g, ' ').trimEnd() : ''; };
+  async function devices(step) {
+    const r = await Api.call('GET', '/me/player/devices'); const l = (r.body && r.body.devices) || [];
+    DBG.add('spotify', `play ${step}: devices → ${r.status}: ${l.map((d) => `${d.name} (${d.type}${d.is_active ? ', active' : ''}${d.is_restricted ? ', restricted' : ''})`).join(', ') || 'none'}`);
+    return l;
+  }
+  const missingScopes = () => (Api.st && Api.st.missing) || [];
+  const needsReconnect = () => missingScopes().some((x) => PLAY_SCOPES.includes(x));
+  function askReconnect(why_) {
+    DBG.add('spotify', `play: needs a reconnect (${why_})`);
+    toast('Reconnect Spotify once so Luciel may start songs – tap Reconnect', 'warn');
+    if (open) { if (top().p === 'now') paintNow(); else refresh(); }
+  }
+  /** wake / find the phone's Spotify device (null = none) */
+  async function phoneDevice(tag) {
+    const T = tag ? tag + ' ' : '';
+    let list = await devices(T + '2/4'), dev = pickPhone(list);
+    if (!dev) {
+      const how = N.spotifyWake ? N.spotifyWake() : 'none';
+      DBG.add('spotify', `play ${T}2/4: this phone isn't in Spotify Connect yet – woke Spotify in the background (${how})`);
+      if (how !== 'not-installed') for (let i = 0; i < 8 && !dev; i++) { await sleep(Api.wakeWait); list = await devices(`${T}2/4 look again ${i + 1}`); dev = pickPhone(list); }
+      if (!dev) dev = list.find((d) => d && d.id && d.is_active && !d.is_restricted) || null;   // something else already playing (a speaker…)
+    }
+    return { dev, anyActive: list.some((d) => d && d.is_active) };
+  }
+  let pending = null, playSeq = 0;
+  /** what Now Playing shows until Spotify's own session reports the new song */
+  function pendingNow(s) {
+    const p = pending; if (!p) return null;
+    if (Date.now() - p.at > 15000) { pending = null; return null; }
+    if (s && s.active) {
+      const same = String(s.title || '').trim().toLowerCase() === String(p.name || '').trim().toLowerCase();
+      if ((p.ctx ? songKey(s) !== p.prevKey && s.playing : same)) { pending = null; return null; }
+    }
+    return p;
+  }
+  async function playApi(body, fallback, label, opt = {}) {
+    vib(); const seq = ++playSeq, t0 = Date.now();
     if (!audio.paused) A.engine.pauseFor('Spotify: play from Luciel (one source at a time)');
     setSource('spotify', 'play from the Spotify tab');
     if (!Api.on) { Links.open(fallback, label); return 'link'; }
-    let r = await Api.call('PUT', '/me/player/play', body);
-    if (r.status === 404) {
-      // no active device: wake the phone's Spotify (or any device) and try once more
-      const d = await Api.call('GET', '/me/player/devices');
-      const list = (d.body && d.body.devices) || [];
-      const dev = list.find((x) => x.is_active) || list.find((x) => /smartphone/i.test(x.type || '')) || list[0];
-      if (dev && dev.id) r = await Api.call('PUT', '/me/player/play?device_id=' + encodeURIComponent(dev.id), body);
+    if (needsReconnect()) { askReconnect('missing ' + missingScopes().join(', ')); return 'reconnect'; }
+    if (opt.show) { pending = Object.assign({ at: Date.now(), prevKey: songKey(st()) }, opt.show); if (top().p !== 'now') go('now'); else paintNow(); }
+    DBG.add('spotify', `play 1/4: “${label}” – ${body.context_uri ? body.context_uri + (body.offset ? ' from ' + body.offset.uri : '') : (body.uris || []).length + ' song(s)'}`);
+    const { dev, anyActive } = await phoneDevice('');
+    if (seq !== playSeq) return 'superseded';
+    if (dev && !dev.is_active && !anyActive) {
+      const t = await Api.call('PUT', '/me/player', { device_ids: [dev.id], play: false });
+      DBG.add('spotify', `play 3/4: transfer playback to ${dev.name} → ${t.status}${why(t)}`);
     }
-    if (r.status >= 200 && r.status < 300) { DBG.add('spotify', `play via Web API: ${label}`); toast(`Playing ${label} on Spotify`); setTimeout(() => pull('played via Web API'), 900); return 'api'; }
-    const reason = (r.body && r.body.error && r.body.error.reason) || '';
-    const note = r.status === 403 || reason === 'PREMIUM_REQUIRED' ? 'Starting songs from Luciel needs Spotify Premium – opening it in Spotify instead'
-      : r.status === 404 || reason === 'NO_ACTIVE_DEVICE' ? 'Spotify isn’t open yet – opening it there'
-      : r.status === 0 ? 'No connection – opening it in Spotify' : 'Couldn’t start it from here – opening it in Spotify';
-    DBG.add('spotify', `play via Web API failed (${r.status} ${reason}) -> deep link`);
+    const path = '/me/player/play' + (dev ? '?device_id=' + encodeURIComponent(dev.id) : '');
+    let r = await Api.call('PUT', path, body);
+    if (dev && (r.status === 404 || r.status === 502)) { await sleep(700); r = await Api.call('PUT', path, body); }
+    DBG.add('spotify', `play 4/4: PUT ${path} → ${r.status}${why(r)} (${Date.now() - t0} ms)`);
+    if (seq !== playSeq) return 'superseded';
+    if (r.status >= 200 && r.status < 300) {
+      if (opt.after) { try { await opt.after(dev); } catch (e) {} }
+      setTimeout(() => pull('played via Web API'), 700); setTimeout(() => pull('played via Web API'), 2200);
+      return 'api';
+    }
+    pending = null; if (open && top().p === 'now') paintNow();
+    const e = (r.body && r.body.error) || {}, reason = e.reason || '';
+    if ((r.status === 401 || r.status === 403) && /scope/i.test(e.message || '')) { Api.st.missing = PLAY_SCOPES.slice(); askReconnect(e.message); return 'reconnect'; }
+    const note = reason === 'PREMIUM_REQUIRED' || (r.status === 403 && !reason) ? 'Starting songs from Luciel needs Spotify Premium – opening it in Spotify instead'
+      : r.status === 0 ? 'No connection – opening it in Spotify'
+      : !dev ? 'Couldn’t wake Spotify in the background – opening it so it can play' : 'Spotify didn’t start it – opening it in Spotify';
+    DBG.add('spotify', `play: last resort – open Spotify (${r.status} ${reason})`);
     toast(note); Links.open(fallback, label);
     return 'link';
   }
-  function playItem(x, ctx) {
-    if (x.kind === 'playlist' || x.kind === 'album' || x.kind === 'artist') return playApi({ context_uri: x.uri }, linkOf(x), x.name);
-    if (ctx && ctx.uri) return playApi({ context_uri: ctx.uri, offset: { uri: x.uri } }, linkOf(x), x.name);
-    if (ctx && ctx.uris) { const i = Math.max(0, ctx.uris.indexOf(x.uri)); return playApi({ uris: ctx.uris.slice(i, i + 50) }, linkOf(x), x.name); }
-    return playApi({ uris: [x.uri] }, linkOf(x), x.name);
+  const showOf = (x, sub) => ({ name: x.name, artist: sub || x.artist || x.owner || '', artists: x.artists || [], img: x.big || x.img || '', uri: x.uri, albumId: x.albumId || (x.kind === 'album' ? x.id : ''), ctx: x.kind !== 'track' });
+  function playItem(x, ctx, opt = {}) {
+    if (x.kind === 'playlist' || x.kind === 'album' || x.kind === 'artist') return playApi({ context_uri: x.uri }, linkOf(x), x.name, Object.assign({ show: showOf(x, (x.kind === 'artist' ? 'Artist' : x.kind === 'album' ? x.artist : 'Playlist') + ' · starting…') }, opt));
+    const show = showOf(x);
+    if (ctx && ctx.uri) return playApi({ context_uri: ctx.uri, offset: { uri: x.uri } }, linkOf(x), x.name, { show });
+    if (ctx && ctx.uris) { const i = Math.max(0, ctx.uris.indexOf(x.uri)); return playApi({ uris: ctx.uris.slice(i, i + 50) }, linkOf(x), x.name, { show }); }
+    return playApi({ uris: [x.uri] }, linkOf(x), x.name, { show });
+  }
+  function shuffleItem(x) {
+    return playItem(x, null, { after: async (dev) => { const r = await Api.call('PUT', '/me/player/shuffle?state=true' + (dev ? '&device_id=' + encodeURIComponent(dev.id) : '')); DBG.add('spotify', `shuffle on → ${r.status}`); } });
+  }
+  /** long-press: Add to queue */
+  async function queueAdd(x) {
+    vib();
+    if (!Api.on) { toast('Connect Spotify to queue songs from Luciel'); return 'off'; }
+    if (needsReconnect()) { askReconnect('queue'); return 'reconnect'; }
+    const list = await devices('queue'); const dev = pickPhone(list) || list.find((d) => d.is_active);
+    const r = await Api.call('POST', '/me/player/queue?uri=' + encodeURIComponent(x.uri) + (dev ? '&device_id=' + encodeURIComponent(dev.id) : ''));
+    DBG.add('spotify', `queue “${x.name}” → ${r.status}${why(r)}`);
+    if (r.status >= 200 && r.status < 300) { toast(`Added to queue: ${x.name}`); return 'ok'; }
+    toast(r.status === 404 ? 'Start something on Spotify first – then songs can be queued' : (r.body && r.body.error && r.body.error.reason) === 'PREMIUM_REQUIRED' ? 'Queueing needs Spotify Premium' : 'Couldn’t add it to the queue', 'warn');
+    return 'fail';
+  }
+  function itemMenu(x) {
+    const M = window.LucielMobile; if (!M || !M.menuSheet) return;
+    const items = [];
+    if (x.kind === 'track') items.push(['queue', I.list, 'Add to queue']);
+    if (x.kind === 'track' || x.kind === 'album') (x.artists || []).filter((a) => a.id).slice(0, 3).forEach((a) => items.push(['ar:' + a.id, I.radio, 'Go to ' + esc(a.name)]));
+    if (x.kind === 'track' && x.albumId) items.push(['al', I.spark, 'Go to album']);
+    if (x.kind !== 'track') items.push(['play', I.play, 'Play']);
+    items.push(['open', I.open, 'Open in Spotify']);
+    M.menuSheet(x.name, items, (a) => {
+      if (a === 'queue') queueAdd(x);
+      else if (a.startsWith('ar:')) { const ar = (x.artists || []).find((y) => y.id === a.slice(3)); if (ar) go('artist', { ar: { id: ar.id, name: ar.name } }); }
+      else if (a === 'al') go('album', { al: { id: x.albumId, name: x.album, uri: x.albumUri, img: x.big || x.img } });
+      else if (a === 'play') playItem(x);
+      else if (a === 'open') Links.open(linkOf(x), x.name);
+    });
   }
   // sign-in result from Android (SpotifyCallbackActivity -> WebBridge.pushEvent)
   const prevEvent = B.event;
@@ -315,8 +415,8 @@
   // ------------------------------------------------------------------ pages
   let root = null, open = false; const stack = [{ p: 'home' }];
   const top = () => stack[stack.length - 1];
-  function go(p, extra = {}) { stack.push({ p, ...extra }); render(); if (root) root.scrollTop = 0; }
-  function back() { if (stack.length <= 1) return false; const was = top().p; stack.pop(); if (was === 'now') stageHome(); render(); return true; }
+  function go(p, extra = {}) { if (root) top().y = root.scrollTop; stack.push({ p, ...extra }); render(); if (root) root.scrollTop = 0; }
+  function back() { if (stack.length <= 1) return false; const was = top().p; stack.pop(); if (was === 'now') stageHome(); render(); if (root) root.scrollTop = top().y || 0; return true; }
   function greeting() { const h = new Date().getHours(); return h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; }
   const head = (title, sub = '') => `<header class="sp-top"><button class="sp-ic" data-act="back" title="Back">${I.back}</button><div class="sp-top-t"><b>${esc(title)}</b>${sub ? `<em>${esc(sub)}</em>` : ''}</div></header>`;
   const tile = (t, i) => `<button class="sp-gtile" data-track="${i}"><img src="${esc(coverOf(t))}" data-ck="${esc(t.key)}" alt=""><span>${esc(t.title)}</span></button>`;
@@ -409,11 +509,17 @@
   const subOf = (x) => x.kind === 'playlist' ? ['Playlist', x.owner].filter(Boolean).join(' · ') : x.kind === 'artist' ? 'Artist' : x.kind === 'album' ? ['Album', x.artist].filter(Boolean).join(' · ') : [x.artist, x.album].filter(Boolean).join(' · ');
   const pic = (x, cls = '') => `<img${cls ? ` class="${cls}"` : ''} src="${esc(x.img || placeholder({ title: x.name, artist: x.artist || x.owner }))}" data-fb="${esc(x.name || '')}" alt="" loading="lazy">`;
   const apiCard = (x) => `<button class="sp-card" data-it="${esc(reg(x))}">${pic(x)}<b>${esc(x.name)}</b><span>${esc(subOf(x))}</span></button>`;
-  const apiRow = (x) => `<div class="sp-row" data-it="${esc(reg(x))}">${pic(x, x.kind === 'artist' ? 'sp-round' : '')}<div class="sp-txt"><b>${esc(x.name)}</b><span>${esc(subOf(x))}</span></div>${x.kind === 'playlist' ? I.chev : x.kind === 'track' ? `<i class="sp-ri sp-acc sp-mini-play">${I.play}</i>` : ''}</div>`;
+  /** "Drake, 21 Savage · Her Loss" with each artist name tappable (-> artist page) */
+  const arLinks = (arts) => (arts || []).map((a) => (a.id ? `<span class="sp-arl" data-ar="${esc(a.id)}" data-arn="${esc(a.name)}">${esc(a.name)}</span>` : esc(a.name))).join(', ');
+  const trackSub = (x, noAlbum) => [arLinks(x.artists) || esc(x.artist), noAlbum ? '' : esc(x.album)].filter(Boolean).join(' · ');
+  const fmtDur = (d) => (d ? fmt(d) : '');
+  const apiRow = (x, o = {}) => `<div class="sp-row${o.num ? ' sp-numrow' : ''}" data-it="${esc(reg(x))}">${o.num ? `<i class="sp-num">${o.num}</i>` : pic(x, x.kind === 'artist' ? 'sp-round' : '')}<div class="sp-txt"><b>${esc(x.name)}${x.explicit ? ' <i class="sp-e" title="Explicit">E</i>' : ''}</b>${o.noSub ? '' : `<span>${x.kind === 'track' ? trackSub(x, o.noAlbum) : esc(subOf(x))}</span>`}</div>${x.kind === 'track' ? (o.dur ? `<em class="sp-dur">${fmtDur(x.dur)}</em>` : `<i class="sp-ri sp-acc sp-mini-play">${I.play}</i>`) : I.chev}</div>`;
   const skeleton = (n = 5) => `<div class="sp-list sp-skel" aria-label="Loading">${'<div class="sp-row"><i class="sp-sk-img"></i><div class="sp-txt"><b class="sp-sk"></b><span class="sp-sk short"></span></div></div>'.repeat(n)}</div>`;
   const skelShelf = () => `<div class="sp-hs sp-skel">${'<div class="sp-card"><i class="sp-sk-img big"></i><b class="sp-sk"></b></div>'.repeat(4)}</div>`;
 
+  const reconCard = () => `<div class="sp-connect sp-recon"><div class="sp-connect-ic">${I.link}</div><div class="sp-txt"><b>Reconnect Spotify (one tap)</b><span>Luciel now needs permission to start songs on your phone. Your Client ID stays as it is.</span></div><div class="sp-row2"><button class="sp-btn primary" data-act="reconnect">Reconnect</button></div></div>`;
   function connectCard() {
+    if (Api.on && needsReconnect()) return reconCard();
     if (!Api.has || Api.on || store.get(K_LATER, false)) return '';
     return `<div class="sp-connect"><div class="sp-connect-ic">${I.link}</div><div class="sp-txt"><b>Connect Spotify to load your playlists here</b><span>Your playlists, Liked Songs and search results right inside Luciel. Optional – everything else works without it.</span></div>
       <div class="sp-row2"><button class="sp-btn primary" data-act="account">Set up</button><button class="sp-btn" data-act="connectLater">Not now</button></div></div>`;
@@ -467,7 +573,13 @@
       })
       .then(() => { if (open && top() === e) paintList(e); });
   }
-  function ctxOf(e) { return e.p === 'playlist' ? { uri: e.pl.uri } : e.p === 'liked' && e.list ? { uris: e.list.map((t) => t.uri) } : null; }
+  function ctxOf(e) {
+    if (e.p === 'playlist') return { uri: e.pl.uri };
+    if (e.p === 'album') return { uri: (e.info && e.info.uri) || e.al.uri || 'spotify:album:' + e.al.id };
+    if (e.p === 'artist' && e.pop) return { uris: e.pop.map((t) => t.uri) };          // no offset into an artist context
+    if ((e.p === 'liked' || e.p === 'recent') && e.list) return { uris: e.list.map((t) => t.uri) };
+    return null;
+  }
   function renderListPage() {
     const e = top(), P = PAGES[e.p];
     let h;
@@ -493,6 +605,116 @@
     return `<div class="sp-list">${e.list.map(apiRow).join('')}</div>${e.next ? `<button class="sp-btn sp-more" data-act="more" ${e.busy ? 'disabled' : ''}>${e.busy ? 'Loading…' : 'Load more'}</button>` : ''}`;
   }
   function paintList(e) { const l = $('spList'); if (l) l.innerHTML = listBody(e); const sub = root && root.querySelector('.sp-plhead .sp-txt span'); if (sub && e.p === 'playlist' && e.total != null) { const x = e.pl; sub.textContent = [x.owner && 'by ' + x.owner, e.total + ' song' + (e.total === 1 ? '' : 's')].filter(Boolean).join(' · '); } }
+
+  // ---- artist page (iPod / Spotify style): header, Play / Shuffle, Popular, Discography (Albums · Singles & EPs · Compilations)
+  // Feb-2026 Development Mode: /artists/{id}/top-tracks is removed, so "Popular" comes from search (artist:"name", tracks
+  // by this artist, in Spotify's relevance order – track popularity is gone too); followers are removed (hidden).
+  const GROUPS = [['album', 'Albums'], ['single', 'Singles & EPs'], ['compilation', 'Compilations']];
+  function loadArtist(e) {
+    if (e.started || !Api.on) return; e.started = true;
+    const id = encodeURIComponent(e.ar.id), redraw = () => { if (open && top() === e) paintArtist(e); };
+    Api.get('/artists/' + id, 600000).then((b) => { e.info = Norm.artist(b); }).catch((er) => { e.infoErr = er; }).then(redraw);
+    loadPopular(e).then(redraw);
+    e.disc = {}; GROUPS.forEach(([g]) => { e.disc[g] = { list: null }; loadDisc(e, g).then(redraw); });
+  }
+  async function loadPopular(e) {
+    const id = e.ar.id;
+    if (!Api.noTopTracks) {
+      try { const b = await Api.get(`/artists/${encodeURIComponent(id)}/top-tracks`, 600000); e.pop = Norm.list(b.tracks, Norm.track).slice(0, 10); DBG.add('spotify', `artist: top-tracks → ${e.pop.length}`); return; }
+      catch (er) { Api.noTopTracks = true; DBG.add('spotify', `artist: top-tracks unavailable (${er.status}) – Popular comes from search`); }
+    }
+    const name = (e.info && e.info.name) || e.ar.name || '';
+    try {
+      const b = await Api.get('/search?type=track&limit=10&q=' + encodeURIComponent(`artist:"${name}"`), 600000);
+      let l = Norm.list(b.tracks && b.tracks.items, Norm.track).filter((t) => t.artists.some((a) => a.id === id));
+      if (l.some((t) => t.pop != null)) l = l.map((t, i) => [t, i]).sort((a, b2) => (b2[0].pop || 0) - (a[0].pop || 0) || a[1] - b2[1]).map((x) => x[0]);
+      e.pop = dedupe(l);
+    } catch (er) { e.pop = []; e.popErr = er; }
+  }
+  async function loadDisc(e, g, more) {
+    const d = e.disc[g]; if (d.busy) return; d.busy = true;
+    const off = more ? (d.list || []).length : 0, lim = Api.albumLimit || 20;
+    const path = (l) => `/artists/${encodeURIComponent(e.ar.id)}/albums?include_groups=${g}&limit=${l}&offset=${off}`;
+    try {
+      let b;
+      try { b = await Api.get(path(lim), 600000); }
+      catch (er) { if (er.status !== 400 || lim <= 10) throw er; Api.albumLimit = 10; DBG.add('spotify', 'artist albums: limit 20 refused – using 10'); b = await Api.get(path(10), 600000); }
+      const l = Norm.list(b.items, Norm.album);
+      d.list = more ? (d.list || []).concat(l) : l; d.next = !!b.next; d.total = b.total; d.err = null;
+    } catch (er) { d.err = er; if (!d.list) d.list = []; }
+    d.busy = false;
+  }
+  const albumTile = (x) => `<button class="sp-atile" data-it="${esc(reg(x))}">${pic(x)}<b>${esc(x.name)}</b><span>${esc([x.year, x.type === 'single' && x.total > 1 ? 'EP' : x.type === 'single' ? 'Single' : x.type === 'compilation' ? 'Compilation' : 'Album'].filter(Boolean).join(' · '))}</span></button>`;
+  function renderArtist() {
+    const e = top(); loadArtist(e);
+    const a = e.info || e.ar;
+    return `${head(a.name || 'Artist', 'Artist')}<div id="spArtist">${artistBody(e)}</div>`;
+  }
+  function artistBody(e) {
+    if (!Api.on) return `<div class="sp-empty keep"><b>Spotify isn’t connected</b><p>Connect it to see artists here.</p><button class="sp-btn primary" data-act="account">Connect Spotify</button></div>`;
+    const a = e.info || e.ar;
+    const meta = [a.followers != null ? Number(a.followers).toLocaleString() + ' followers' : '', (a.genres || []).slice(0, 3).join(', ')].filter(Boolean).join(' · ');
+    const popN = e.popAll ? 10 : 5;
+    const pop = e.pop == null ? skeleton(3) : e.pop.length ? `<div class="sp-list">${e.pop.slice(0, popN).map((t, i) => apiRow(t, { num: i + 1, noAlbum: false })).join('')}</div>${e.pop.length > 5 && !e.popAll ? '<button class="sp-link sp-clear" data-act="popMore">Show more</button>' : ''}` : '<div class="sp-hint">No popular songs to show.</div>';
+    const disc = e.disc || {}, have = GROUPS.filter(([g]) => disc[g] && disc[g].list && disc[g].list.length);
+    if (!e.tab || (disc[e.tab] && disc[e.tab].list && !disc[e.tab].list.length && have.length)) e.tab = (have[0] || GROUPS[0])[0];
+    const cur = disc[e.tab] || {};
+    const allDone = GROUPS.every(([g]) => disc[g] && disc[g].list);
+    const grid = !cur.list ? `<div class="sp-agrid sp-skel">${'<div class="sp-atile"><i class="sp-sk-img big"></i><b class="sp-sk"></b></div>'.repeat(4)}</div>`
+      : cur.list.length ? `<div class="sp-agrid">${cur.list.map(albumTile).join('')}</div>${cur.next ? `<button class="sp-btn sp-more" data-act="discMore" ${cur.busy ? 'disabled' : ''}>${cur.busy ? 'Loading…' : 'Show more'}</button>` : ''}`
+      : allDone && !have.length ? `<div class="sp-hint">${cur.err ? esc(cur.err.message) : 'No releases found.'}</div>` : '';
+    return `<div class="sp-arhead">${a.big || a.img ? `<img class="sp-arimg" src="${esc(a.big || a.img)}" data-fb="${esc(a.name || '')}" alt="">` : `<img class="sp-arimg" src="${esc(placeholder({ title: a.name || '' }))}" alt="">`}
+        <h2>${esc(a.name || '')}</h2>${meta ? `<span class="sp-armeta">${esc(meta)}</span>` : ''}</div>
+      <div class="sp-row2 sp-center"><button class="sp-btn primary" data-act="arPlay">${I.play}<span>Play</span></button><button class="sp-btn" data-act="arShuffle">${I.spark}<span>Shuffle</span></button><button class="sp-btn" data-act="openCtx">Open in Spotify</button></div>
+      <div class="sp-sec">Popular</div><div id="spPop">${pop}</div>
+      <div class="sp-sec">Discography</div>
+      <div class="sp-filters" id="spDiscTabs">${(have.length ? have : allDone ? [] : GROUPS.slice(0, 1)).map(([g, n]) => `<button class="sp-chip ${e.tab === g ? 'on' : ''}" data-disc="${g}">${n}${disc[g] && disc[g].total ? ` <em>${disc[g].total}</em>` : ''}</button>`).join('')}</div>
+      <div id="spDisc">${grid}</div>`;
+  }
+  function paintArtist(e) { const el = $('spArtist'); if (!el) return; el.innerHTML = artistBody(e); const t = root.querySelector('.sp-top-t b'); if (t && e.info) t.textContent = e.info.name; }
+
+  // ---- album page: cover, title, artist(s), year, tracklist, Play album
+  function loadAlbum(e) {
+    if (e.started || !Api.on) return; e.started = true;
+    const redraw = () => { if (open && top() === e) paintAlbum(e); };
+    Api.get('/albums/' + encodeURIComponent(e.al.id), 600000).then((b) => {
+      e.info = Norm.album(b); e.tracks = Norm.list((b.tracks || {}).items, (t) => Norm.track(t, b)); e.next = !!(b.tracks && b.tracks.next); e.raw = { id: b.id, name: b.name, images: b.images, uri: b.uri };
+      e.copy = ((b.copyrights || [])[0] || {}).text || '';
+    }).catch((er) => { e.err = er; }).then(redraw);
+  }
+  async function albumMore(e) {
+    if (e.busy) return; e.busy = true; paintAlbum(e);
+    try { const b = await Api.get(`/albums/${encodeURIComponent(e.al.id)}/tracks?limit=50&offset=${e.tracks.length}`, 600000); e.tracks = e.tracks.concat(Norm.list(b.items, (t) => Norm.track(t, e.raw))); e.next = !!b.next; }
+    catch (er) { toast(er.message, 'warn'); }
+    e.busy = false; paintAlbum(e);
+  }
+  function renderAlbum() { const e = top(); loadAlbum(e); return `${head((e.info || e.al).name || 'Album', 'Album')}<div id="spAlbum">${albumBody(e)}</div>`; }
+  function albumBody(e) {
+    if (!Api.on) return `<div class="sp-empty keep"><b>Spotify isn’t connected</b><p>Connect it to see albums here.</p><button class="sp-btn primary" data-act="account">Connect Spotify</button></div>`;
+    const a = e.info || e.al;
+    if (e.err) return `<div class="sp-empty keep"><b>Couldn’t load this album</b><p>${esc(e.err.message)}</p><button class="sp-btn" data-act="retry">Try again</button></div>`;
+    const tr = e.tracks, mins = tr ? Math.round(tr.reduce((n, t) => n + (t.dur || 0), 0) / 60) : 0;
+    const type = a.type === 'single' && (a.total || 0) > 1 ? 'EP' : a.type ? a.type[0].toUpperCase() + a.type.slice(1) : 'Album';
+    let disc = 0; const multi = tr && tr.some((t) => t.disc > 1);
+    const albumArtists = new Set((a.artists || []).map((x) => x.id));
+    const rows = tr ? tr.map((t) => { let h = ''; if (multi && t.disc !== disc) { disc = t.disc; h = `<div class="sp-sec">Disc ${disc}</div>`; } const solo = t.artists.length === albumArtists.size && t.artists.every((x) => albumArtists.has(x.id)); return h + apiRow(t, { num: t.no || '•', noAlbum: true, dur: true, noSub: solo }); }).join('') : '';
+    return `<div class="sp-alhead">${pic({ img: a.big || a.img, name: a.name })}<div class="sp-txt"><b>${esc(a.name || '')}</b><span>${arLinks(a.artists) || esc(a.artist || '')}</span><em>${esc([type, a.year, tr ? tr.length + (e.next ? '+' : '') + ' songs' : '', mins ? mins + ' min' : ''].filter(Boolean).join(' · '))}</em></div></div>
+      <div class="sp-row2"><button class="sp-btn primary" data-act="alPlay">${I.play}<span>Play album</span></button><button class="sp-btn" data-act="alShuffle">${I.spark}<span>Shuffle</span></button><button class="sp-btn" data-act="openCtx">Open in Spotify</button></div>
+      ${tr ? `<div class="sp-list sp-tracklist">${rows}</div>${e.next ? `<button class="sp-btn sp-more" data-act="alMore" ${e.busy ? 'disabled' : ''}>${e.busy ? 'Loading…' : 'More songs'}</button>` : ''}` : skeleton(6)}
+      ${a.date ? `<div class="sp-attr sp-left">${esc(a.date)}${e.copy ? '<br>' + esc(e.copy) : ''}</div>` : ''}`;
+  }
+  function paintAlbum(e) { const el = $('spAlbum'); if (!el) return; el.innerHTML = albumBody(e); const t = root.querySelector('.sp-top-t b'); if (t && e.info) t.textContent = e.info.name; }
+  /** an artist by name (Now Playing from the media session has no ids) */
+  async function openArtistByName(name) {
+    name = String(name || '').split(/,|&| feat\.? | ft\.? /i)[0].trim(); if (!name) return;
+    if (!Api.on) { searchSpotify(name, false); return; }
+    try {
+      const b = await Api.get('/search?type=artist&limit=5&q=' + encodeURIComponent(name), 600000);
+      const l = Norm.list(b.artists && b.artists.items, Norm.artist);
+      const a = l.find((x) => x.name.toLowerCase() === name.toLowerCase()) || l[0];
+      if (a) go('artist', { ar: a }); else toast(`Couldn’t find ${name} on Spotify`);
+    } catch (er) { toast(er.message, 'warn'); }
+  }
 
   // in-app search (connected)
   let searchT = 0;
@@ -551,10 +773,11 @@
   let nowView = store.get(K_VIEW, 'cover');
   function renderNow() {
     const s = st();
-    return `${head('Now playing', s.active ? 'on ' + (s.app || 'Spotify') : '')}
+    return `${head('Now playing', s.active ? 'on ' + (s.app || 'Spotify') : ' ')}
       <div class="sp-seg sp-viewseg">${[['cover', 'Cover'], ['lucielle', 'Lucielle']].map(([v, n]) => `<button data-view="${v}" class="${nowView === v ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div class="sp-nowart ${nowView === 'lucielle' ? 'is-stage' : ''}" id="spNowArt">${nowView === 'cover' ? `<img id="spBigCover" alt="">` : '<div class="sp-stage" id="spStage"></div>'}</div>
-      <div class="sp-nowmeta"><div class="sp-txt"><b id="spNTitle"></b><span id="spNArtist"></span></div><button class="sp-ic" data-act="openSpotify" title="Open Spotify">${I.open}</button></div>
+      <div id="spRecon"></div>
+      <div class="sp-nowmeta"><div class="sp-txt"><b id="spNTitle"></b><span id="spNArtist" class="sp-arl" data-act="nowArtist"></span></div><button class="sp-ic" data-act="openSpotify" title="Open Spotify">${I.open}</button></div>
       <div class="sp-seek" id="spSeek"><div class="sp-bar"><i id="spFill"></i><b id="spKnob"></b></div><div class="sp-times"><span id="spCur">0:00</span><span id="spDur">0:00</span></div></div>
       <div class="sp-tempo-row"><span class="sp-tempo" id="spTempo" title="Lucielle's tempo: live = measured from the music, tapped = your taps, steady = a fixed beat (tap the tempo to correct it)"></span></div>
       <div class="sp-transport"><button class="sp-tb" data-act="prev" title="Previous">${I.prev}</button><button class="sp-tb big" data-act="toggle" id="spBigPlay" title="Play / pause"></button><button class="sp-tb" data-act="next" title="Next">${I.next}</button></div>
@@ -564,9 +787,13 @@
     if (!open || top().p !== 'now' || !root) return;
     const s = st();
     const t = $('spNTitle'); if (!t) return;
-    t.textContent = s.active ? s.title || 'Unknown song' : 'Nothing playing'; $('spNArtist').textContent = s.active ? [s.artist, s.album].filter(Boolean).join(' · ') : 'Play a song in Spotify';
-    const c = $('spBigCover'); if (c) { const src = coverNow(s); if (c.getAttribute('src') !== src) c.src = src; }
-    $('spBigPlay').innerHTML = s.playing ? I.pause : I.play;
+    const pn = pendingNow(s);
+    if (pn) { t.textContent = pn.name; $('spNArtist').textContent = pn.artist || 'Starting on Spotify…'; }
+    else { t.textContent = s.active ? s.title || 'Unknown song' : 'Nothing playing'; $('spNArtist').textContent = s.active ? [s.artist, s.album].filter(Boolean).join(' · ') : 'Play a song in Spotify'; }
+    const em = root.querySelector('.sp-top-t em'); if (em) em.textContent = pn ? 'Starting on Spotify…' : s.active ? 'on ' + (s.app || 'Spotify') : '';
+    const c = $('spBigCover'); if (c) { const src = pn && pn.img ? pn.img : coverNow(s); if (c.getAttribute('src') !== src) c.src = src; }
+    $('spBigPlay').innerHTML = (pn || s.playing) ? I.pause : I.play;
+    const rc = $('spRecon'); if (rc) rc.innerHTML = Api.on && needsReconnect() ? reconCard() : '';
     const tp = $('spTempo'); if (tp) { tp.hidden = !s.active; tp.textContent = tempoLabel(s); tp.dataset.src = s.bpmSource || ''; }
     paintTime();
   }
@@ -595,7 +822,7 @@
     const p = top().p;
     stageHome();   // always give the stage back before the page is rebuilt, or it would be destroyed with it
     root.dataset.page = p;
-    root.innerHTML = p === 'search' ? renderSearch() : p === 'history' ? renderHistory() : p === 'now' ? renderNow() : p === 'account' ? renderAccount() : PAGES[p] ? renderListPage() : renderHome();
+    root.innerHTML = p === 'search' ? renderSearch() : p === 'history' ? renderHistory() : p === 'now' ? renderNow() : p === 'account' ? renderAccount() : p === 'artist' ? renderArtist() : p === 'album' ? renderAlbum() : PAGES[p] ? renderListPage() : renderHome();
     if (PAGES[p]) loadList(top());
     if (p === 'search') { const i = $('spQ'); if (i && !top().q) setTimeout(() => i.focus(), 60); }
     if (p === 'now') { if (nowView === 'lucielle') { window.LucielMobile.stageTo($('spStage')); stageBorrowed = true; } paintNow(); bindSeek(); }
@@ -608,16 +835,24 @@
     else if (p === 'history') { const l = $('spHList'); if (l) l.innerHTML = historyList(); }
     else if (p === 'search') { const r = $('spResults'); if (r) r.innerHTML = searchResults(); }
     else if (PAGES[p]) paintList(top());
+    else if (p === 'artist') paintArtist(top());
+    else if (p === 'album') paintAlbum(top());
   }
 
   // ------------------------------------------------------------------ events (one delegated handler per root)
+  let longAt = 0;   // when a long-press / context menu / edge swipe last consumed a gesture
   function bind(el) {
     el.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-act],[data-track],[data-quick],[data-q],[data-rmq],[data-filter],[data-hfilter],[data-mode],[data-view],[data-artist],[data-it]');
+      const b = e.target.closest('[data-act],[data-track],[data-quick],[data-q],[data-rmq],[data-filter],[data-hfilter],[data-mode],[data-view],[data-artist],[data-it],[data-ar],[data-disc]');
       if (!b || !el.contains(b)) return;
       const d = b.dataset;
       if (d.rmq != null) { e.stopPropagation(); Library.main.removeSearch(d.rmq); refresh(); return; }
-      if (d.it) { const x = Items.get(d.it); if (!x) return; vib(); if (x.kind === 'playlist') go('playlist', { pl: x }); else playItem(x, ctxOf(top())); return; }
+      if (Date.now() - longAt < 300) { longAt = 0; return; }   // the long-press menu already handled it
+      if (d.ar) { vib(); go('artist', { ar: { id: d.ar, name: d.arn || '' } }); return; }
+      if (d.disc) { const t = top(); t.tab = d.disc; paintArtist(t); return; }
+      if (d.it) { const x = Items.get(d.it); if (!x) return; vib();
+        if (x.kind === 'playlist') go('playlist', { pl: x }); else if (x.kind === 'artist') go('artist', { ar: x }); else if (x.kind === 'album') go('album', { al: x });
+        else playItem(x, ctxOf(top())); return; }
       if (d.track != null) { const t = Library.main.history()[+d.track]; if (t) { vib(); openTrack(t); } return; }
       if (d.quick) { vib(); openQuick(d.quick); return; }
       if (d.q != null) { if (top().p === 'search') { top().q = d.q; render(); } else go('search', { q: d.q }); return; }
@@ -645,10 +880,17 @@
       else if (a === 'connectLater') { store.set(K_LATER, true); refresh(); toast('You can connect Spotify any time in Settings › Spotify'); }
       else if (a === 'playlists' || a === 'liked' || a === 'recent') go(a);
       else if (a === 'retryHome') { Api.cache.clear(); homeData = null; refresh(); }
-      else if (a === 'retry') { const t = top(); Api.cache.clear(); t.err = null; t.list = null; t.oldApi = false; render(); }
+      else if (a === 'retry') { const t = top(); Api.cache.clear(); t.err = null; t.list = null; t.oldApi = false; t.started = false; render(); }
       else if (a === 'more') { loadList(top(), true); paintList(top()); }
       else if (a === 'playCtx') { const t = top(); if (t.p === 'playlist') playItem(t.pl); else if (t.list && t.list.length) playItem(t.list[0], ctxOf(t)); }
-      else if (a === 'openCtx') { const t = top(); if (t.pl) Links.open(linkOf(t.pl), t.pl.name); }
+      else if (a === 'openCtx') { const t = top(), x = t.pl || (t.p === 'artist' && (t.info || t.ar)) || (t.p === 'album' && (t.info || t.al)); if (x) Links.open(linkOf(Object.assign({ uri: '', web: '' }, x, { uri: x.uri || (t.p === 'artist' ? 'spotify:artist:' + x.id : t.p === 'album' ? 'spotify:album:' + x.id : x.uri), web: x.web || '' })), x.name); }
+      else if (a === 'arPlay' || a === 'arShuffle') { const t = top(), x = Object.assign({ kind: 'artist', uri: 'spotify:artist:' + t.ar.id }, t.ar, t.info || {}); if (a === 'arPlay') playItem(x); else shuffleItem(x); }
+      else if (a === 'alPlay' || a === 'alShuffle') { const t = top(), x = Object.assign({ kind: 'album', uri: 'spotify:album:' + t.al.id }, t.al, t.info || {}); if (a === 'alPlay') playItem(x); else shuffleItem(x); }
+      else if (a === 'popMore') { top().popAll = true; paintArtist(top()); }
+      else if (a === 'discMore') { const t = top(); loadDisc(t, t.tab, true).then(() => { if (top() === t) paintArtist(t); }); paintArtist(t); }
+      else if (a === 'alMore') albumMore(top());
+      else if (a === 'nowArtist') { const p = pendingNow(st()); const ar = p && (p.artists || []).find((x) => x.id); if (ar) go('artist', { ar }); else openArtistByName(st().artist); }
+      else if (a === 'reconnect') { const r = N.spotifyConnect(); DBG.add('spotify', 'reconnect: ' + r); if (r === 'opened') toast('Tap Agree on Spotify’s page – Luciel comes straight back'); else go('account'); }
       else if (a === 'connect') {
         vib(); const inp = $('spCid');
         if (inp && inp.value.trim() !== (Api.st.clientId || '') && !saveCid(inp.value)) return;
@@ -677,6 +919,30 @@
       }
       if (e.target.id === 'spCid' && e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
     });
+    // long-press a song / album / artist -> menu (Add to queue, Go to artist / album, Open in Spotify)
+    let lp = null;
+    const lpItem = (t) => { const r = t && t.closest && t.closest('[data-it]'); return r && el.contains(r) ? Items.get(r.dataset.it) : null; };
+    const menuOpen = () => !!(window.LucielMobile && window.LucielMobile.sheet === 'menu');
+    el.addEventListener('pointerdown', (e) => { longAt = 0; const x = lpItem(e.target); if (!x) return; clearTimeout(lp && lp.t); lp = { x: e.clientX, y: e.clientY, t: setTimeout(() => { longAt = Date.now() + 60000; lp = null; if (!menuOpen()) itemMenu(x); }, 520) }; });
+    const lpEnd = () => { if (lp) { clearTimeout(lp.t); lp = null; } };
+    el.addEventListener('pointermove', (e) => { if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) lpEnd(); });
+    el.addEventListener('pointerup', lpEnd); el.addEventListener('pointercancel', lpEnd);
+    el.addEventListener('contextmenu', (e) => { const x = lpItem(e.target); if (!x) return; e.preventDefault(); lpEnd(); longAt = Date.now(); if (!menuOpen()) itemMenu(x); });
+    // edge swipe from the left = back (like the library pages)
+    let sw = null;
+    el.addEventListener('pointerdown', (e) => { if (stack.length > 1 && e.clientX < 24 && top().p !== 'now') sw = { x: e.clientX, y: e.clientY, on: false }; });
+    el.addEventListener('pointermove', (e) => {
+      if (!sw) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+      if (!sw.on && Math.abs(dy) > 24 && Math.abs(dy) > dx) { sw = null; return; }
+      if (dx > 12) { if (!sw.on) { sw.on = true; lpEnd(); try { el.setPointerCapture(e.pointerId); } catch (x) {} el.style.transition = 'none'; } el.style.transform = `translateX(${Math.max(0, dx)}px)`; el.style.opacity = String(1 - Math.min(0.4, dx / innerWidth)); }
+    });
+    const swEnd = (e) => {
+      if (!sw) return; const on = sw.on, dx = e.clientX - sw.x; sw = null; if (!on) return;
+      el.style.transition = 'transform .18s ease, opacity .18s ease'; el.style.transform = ''; el.style.opacity = '';
+      if (dx > innerWidth * 0.3 && e.type !== 'pointercancel') { longAt = Date.now(); back(); }
+      setTimeout(() => { el.style.transition = ''; }, 200);
+    };
+    el.addEventListener('pointerup', swEnd); el.addEventListener('pointercancel', swEnd);
     // a Web API picture that doesn't load -> the themed placeholder
     el.addEventListener('error', (e) => { const im = e.target; if (im && im.tagName === 'IMG' && im.dataset.fb != null && !im.dataset.failed) { im.dataset.failed = '1'; im.src = placeholder({ title: im.dataset.fb }); } }, true);
   }

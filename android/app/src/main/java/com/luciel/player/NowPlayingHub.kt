@@ -205,6 +205,24 @@ object NowPlayingHub {
     }
 
     // ---- transport (mirrors the outside player's own controls)
+    /**
+     * 1.1.5: make the phone's Spotify a Spotify Connect device without opening its UI, so the Web API can start a song
+     * on it. Its media session if it has one (play), otherwise a media-button press sent to Spotify's receiver, which
+     * starts its playback service in the background. Returns what was tried ("session" / "media-button" / "not-installed").
+     */
+    fun wakeSpotify(ctx: Context): String {
+        val c = try { msm?.getActiveSessions(listenerComp)?.firstOrNull { it.packageName == Prefs.SPOTIFY } } catch (_: SecurityException) { null }
+        if (c != null) { c.transportControls.play(); return "session" }
+        if (ctx.packageManager.getLaunchIntentForPackage(Prefs.SPOTIFY) == null) return "not-installed"
+        val t = SystemClock.uptimeMillis()
+        for (action in intArrayOf(android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.ACTION_UP)) {
+            val i = android.content.Intent(android.content.Intent.ACTION_MEDIA_BUTTON).setPackage(Prefs.SPOTIFY)
+                .putExtra(android.content.Intent.EXTRA_KEY_EVENT, android.view.KeyEvent(t, t, action, android.view.KeyEvent.KEYCODE_MEDIA_PLAY, 0))
+            try { ctx.sendBroadcast(i) } catch (_: Exception) {}
+        }
+        return "media-button"
+    }
+
     fun playPause() { val c = controller ?: return; if (c.playbackState?.state == PlaybackState.STATE_PLAYING) c.transportControls.pause() else c.transportControls.play() }
     fun play() { controller?.transportControls?.play() }
     fun pause() { controller?.transportControls?.pause() }

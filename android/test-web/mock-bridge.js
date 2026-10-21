@@ -44,9 +44,13 @@ window.__visual = []; window.__vfiles = {};
 // ---- optional Spotify connection (WebBridge.spotify*), with a MOCKED Web API: no request ever leaves the test.
 // Tests flip window.__sp.connected / clientId and can override window.__spApi(method, path, body) -> {status, body}.
 window.__sp = { clientId: '', connected: false }; window.__spCalls = [];
-const spStatus = () => JSON.stringify({ clientId: window.__sp.clientId, validId: /^[0-9a-f]{32}$/.test(window.__sp.clientId), connected: window.__sp.connected, redirect: 'luciel://spotify-callback', scope: '' });
+const spStatus = () => JSON.stringify({ clientId: window.__sp.clientId, validId: /^[0-9a-f]{32}$/.test(window.__sp.clientId), connected: window.__sp.connected, redirect: 'luciel://spotify-callback', scope: '', missing: window.__sp.connected ? (window.__sp.missing || []) : [] });
+// Spotify Connect devices as /me/player/devices reports them; this phone is "Pixel Test"
+window.__spDevices = [{ id: 'phone1', name: 'Pixel Test', type: 'Smartphone', is_active: false, is_restricted: false }];
+window.__spLog = { transfer: [], queue: [], shuffle: [], play: [] };
 const img = (id, w = 300) => [{ url: 'https://i.scdn.co/image/ab67616d0000' + id, width: w, height: w }];
-const tr = (n, i) => ({ id: 't' + n + i, uri: 'spotify:track:t' + n + i, name: ['Neon Rain', 'Starlit Avenue', 'Pastel Hearts', 'Overdrive', 'Moonlight Arcade', 'City of Glass', 'Velvet Static', 'Afterglow'][i % 8] + (i >= 8 ? ' ' + i : ''), artists: [{ name: ['Neon Arcade', 'Lumen', 'Kiyomi', 'Night Drive'][i % 4] }], album: { name: 'Album ' + (i % 3 + 1), images: img('a' + (i % 6), 300) }, duration_ms: 200000 + i * 1000, is_local: false, type: 'track' });
+const ARTISTS = ['Neon Arcade', 'Lumen', 'Kiyomi', 'Night Drive'];
+const tr = (n, i, ar) => ({ id: 't' + n + i, uri: 'spotify:track:t' + n + i, name: ['Neon Rain', 'Starlit Avenue', 'Pastel Hearts', 'Overdrive', 'Moonlight Arcade', 'City of Glass', 'Velvet Static', 'Afterglow'][i % 8] + (i >= 8 ? ' ' + i : ''), artists: ar ? [ar] : [{ id: 'a' + (i % 4 + 1), name: ARTISTS[i % 4] }], album: { id: 'alb' + (i % 3 + 1), uri: 'spotify:album:alb' + (i % 3 + 1), name: 'Album ' + (i % 3 + 1), images: img('a' + (i % 6), 300) }, duration_ms: 200000 + i * 1000, is_local: false, type: 'track' });
 window.__spFixtures = {
   playlists: [['p1', 'Late Night Drive', 'pj', 42], ['p2', 'Synthwave Essentials', 'Spotify', 120], ['p3', 'Gym Bangers', 'pj', 31], ['p4', 'Lo-fi Study', 'pj', 64], ['p5', 'Road Trip 2026', 'pj', 18]]
     .map(([id, name, owner, total]) => ({ id, name, uri: 'spotify:playlist:' + id, owner: { id: owner.toLowerCase(), display_name: owner }, images: img(id, 640), items: { total }, external_urls: { spotify: 'https://open.spotify.com/playlist/' + id } })),
@@ -66,17 +70,50 @@ window.__spApi = (m, path, body) => {
   if (m === 'GET' && p === '/search') {
     const q = (u.searchParams.get('q') || '').toLowerCase(), lim = +u.searchParams.get('limit');
     if (lim > 10) return { status: 400, body: { error: { status: 400, message: 'Invalid limit' } } };
+    const am = /^artist:"(.+)"$/.exec(q);
+    if (am) { const i = Math.max(0, ARTISTS.map((x) => x.toLowerCase()).indexOf(am[1])); return { status: 200, body: { tracks: { items: F.tracks('P', 10).map((t, j) => Object.assign(t, { name: 'Hit ' + (j + 1) + ' – ' + t.name, artists: [{ id: 'a' + (i + 1), name: ARTISTS[i] }] })) } } }; }
+    if (u.searchParams.get('type') === 'artist') { const i = Math.max(0, ARTISTS.map((x) => x.toLowerCase()).indexOf(q)); return { status: 200, body: { artists: { items: [{ id: 'a' + (i + 1), uri: 'spotify:artist:a' + (i + 1), name: ARTISTS[i], images: img('ar' + (i + 1), 160) }] } } }; }
     const ts = F.tracks('S', 10).map((t) => Object.assign(t, { name: t.name + ' (' + q + ')' }));
     return { status: 200, body: { tracks: { items: ts }, artists: { items: [{ id: 'a1', uri: 'spotify:artist:a1', name: 'Neon Arcade', images: img('ar1', 160) }, null] }, playlists: { items: [null, F.playlists[1]] }, albums: { items: [{ id: 'al1', uri: 'spotify:album:al1', name: 'Retrowave Nights', artists: [{ name: 'Neon Arcade' }], images: img('al1') }] } } };
   }
-  if (m === 'PUT' && p === '/me/player/play') return window.__spPlay ? window.__spPlay(body) : { status: 204, body: null };
+  if (m === 'PUT' && p === '/me/player/play') {
+    window.__spLog.play.push({ device: u.searchParams.get('device_id'), body });
+    const r = window.__spPlay ? window.__spPlay(body) : { status: 204, body: null };
+    // like the real phone: Spotify's media session reports the new song a moment later
+    if (r.status === 204 && window.__spEcho !== false) setTimeout(() => {
+      const uri = (body.offset && body.offset.uri) || (body.uris && body.uris[0]) || '';
+      const t = window.__spByUri[uri] || { name: 'First song of ' + (body.context_uri || ''), artists: [{ name: 'Various' }], album: { name: '' } };
+      window.__ext = { active: true, playing: true, pkg: 'com.spotify.music', app: 'Spotify', title: t.name, artist: t.artists.map((a) => a.name).join(', '), album: (t.album || {}).name || '', duration: 200, position: 0, key: 'spotify|' + t.name, art: '/_n/ext-art?v=' + (++window.__artV) };
+      window.LucielAndroidBridge.ext(Object.assign({}, window.__ext));
+    }, window.__spEchoMs || 400);
+    return r;
+  }
   if (m === 'GET' && p === '/me/player/devices') return { status: 200, body: { devices: window.__spDevices || [] } };
+  if (m === 'PUT' && p === '/me/player') { window.__spLog.transfer.push(body); (window.__spDevices || []).forEach((d) => { d.is_active = body.device_ids.includes(d.id); }); return { status: 204, body: null }; }
+  if (m === 'POST' && p === '/me/player/queue') { window.__spLog.queue.push({ uri: u.searchParams.get('uri'), device: u.searchParams.get('device_id') }); return { status: 204, body: null }; }
+  if (m === 'PUT' && p === '/me/player/shuffle') { window.__spLog.shuffle.push({ state: u.searchParams.get('state'), device: u.searchParams.get('device_id') }); return { status: 204, body: null }; }
+  // ---- artists + albums (Feb-2026 Development Mode shape: no followers / popularity, no top-tracks)
+  if (m === 'GET' && (mm = /^\/artists\/([^/]+)$/.exec(p))) { const i = Math.max(0, ['a1', 'a2', 'a3', 'a4'].indexOf(mm[1])); return { status: 200, body: { id: mm[1], uri: 'spotify:artist:' + mm[1], name: ARTISTS[i], type: 'artist', genres: ['synthwave', 'retrowave'], images: img('ar' + mm[1], 640) } }; }
+  if (m === 'GET' && /^\/artists\/[^/]+\/top-tracks$/.test(p)) return { status: 404, body: { error: { status: 404, message: 'Service not found' } } };
+  if (m === 'GET' && (mm = /^\/artists\/([^/]+)\/albums$/.exec(p))) {
+    const g = u.searchParams.get('include_groups'), off = +u.searchParams.get('offset') || 0, lim = +u.searchParams.get('limit') || 20;
+    if (lim > 20 && window.__spAlbumMax) return { status: 400, body: { error: { status: 400, message: 'Invalid limit' } } };
+    const n = { album: 26, single: 6, compilation: 0 }[g] || 0, i0 = ARTISTS[Math.max(0, ['a1', 'a2', 'a3', 'a4'].indexOf(mm[1]))];
+    const all = Array.from({ length: n }, (_, i) => ({ id: `al-${g}-${i}`, uri: `spotify:album:al-${g}-${i}`, name: (g === 'single' ? ['Midnight', 'Glow', 'Pulse', 'Run', 'Halo', 'Echo'][i % 6] : ['Retrowave Nights', 'Chrome Dreams', 'Sunset Boulevard', 'Grid Runner', 'Neon Skyline'][i % 5] + (i >= 5 ? ' ' + (i + 1) : '')), album_type: g, total_tracks: g === 'single' ? (i % 2 ? 4 : 1) : 21, release_date: String(2026 - i) + '-05-01', images: img(`al${g}${i % 6}`, 640), artists: [{ id: mm[1], name: i0 }] }));
+    return { status: 200, body: { items: all.slice(off, off + lim), total: n, next: off + lim < n ? 'next' : null } };
+  }
+  const albumTracks = (id, off, k) => Array.from({ length: k }, (_, j) => { const i = off + j; return Object.assign(tr('X' + id + '-', i, { id: 'a1', name: 'Neon Arcade' }), { album: undefined, track_number: i + 1, disc_number: 1, duration_ms: 180000 + i * 7000, explicit: i === 2, artists: i === 4 ? [{ id: 'a1', name: 'Neon Arcade' }, { id: 'a3', name: 'Kiyomi' }] : [{ id: 'a1', name: 'Neon Arcade' }] }); });
+  if (m === 'GET' && (mm = /^\/albums\/([^/]+)$/.exec(p))) return { status: 200, body: { id: mm[1], uri: 'spotify:album:' + mm[1], name: 'Retrowave Nights', album_type: 'album', total_tracks: 21, release_date: '2026-05-01', images: img('al' + mm[1], 640), artists: [{ id: 'a1', name: 'Neon Arcade' }], copyrights: [{ text: '© 2026 Neon Arcade' }], tracks: { items: albumTracks(mm[1], 0, 20), total: 21, next: 'next' } } };
+  if (m === 'GET' && (mm = /^\/albums\/([^/]+)\/tracks$/.exec(p))) { const off = +u.searchParams.get('offset') || 0; return { status: 200, body: { items: albumTracks(mm[1], off, Math.max(0, 21 - off)), total: 21, next: null } }; }
   return { status: 404, body: { error: { status: 404, message: 'mock: no route ' + m + ' ' + p } } };
 };
 Object.assign(window.LucielAndroid, {
   spotifyStatus: spStatus,
   spotifySetClientId: (id) => { const t = id.trim().toLowerCase(); if (t && !/^[0-9a-f]{32}$/.test(t)) return JSON.stringify({ error: 'format' }); if (t !== window.__sp.clientId) window.__sp.connected = false; window.__sp.clientId = t; window.__calls.push('spotifySetClientId'); return spStatus(); },
   spotifyConnect: () => { window.__calls.push('spotifyConnect'); return /^[0-9a-f]{32}$/.test(window.__sp.clientId) ? 'opened' : 'no-client-id'; },
+  spotifyWake: () => { window.__calls.push('spotifyWake'); const d = window.__spDevices; if (window.__spWakeAdds !== false && !d.some((x) => x.id === 'phone1')) setTimeout(() => d.push({ id: 'phone1', name: 'Pixel Test', type: 'Smartphone', is_active: false, is_restricted: false }), 150); return window.__spWakeResult || 'media-button'; },
+  spotifyDeviceNames: () => JSON.stringify(['Pixel Test', 'Pixel 9']),
   spotifyDisconnect: () => { window.__calls.push('spotifyDisconnect'); window.__sp.connected = false; },
-  spotifyApi: (id, m, path, body) => { window.__spCalls.push(m + ' ' + path); let r; try { r = window.__spApi(m, path, body ? JSON.parse(body) : null); } catch (e) { r = { status: 500, body: null }; } res(id, true, Object.assign({ retryAfter: 0 }, r)); },
+  spotifyApi: (id, m, path, body) => { window.__spCalls.push(m + ' ' + path); let r; try { r = window.__spApi(m, path, body ? JSON.parse(body) : null); } catch (e) { r = { status: 500, body: { error: { message: String(e) } } }; } if (r.body) JSON.stringify(r.body, (k, v) => { if (v && v.uri && v.name && /spotify:track:/.test(v.uri)) window.__spByUri[v.uri] = v; return v; }); res(id, true, Object.assign({ retryAfter: 0 }, r)); },
 });
+window.__spByUri = {}; window.__artV = 100;
