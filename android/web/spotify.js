@@ -716,6 +716,20 @@
     } catch (er) { toast(er.message, 'warn'); }
   }
 
+  /** Spotify artist genres for the scene auto-switch (genre packs): search the artist by name, then /artists/{id}
+   *  (still returns genres in the Feb-2026 Development Mode); [] when not connected or nothing found. Cached 10 min. */
+  async function genresFor(artist) {
+    const name = String(artist || '').split(/,|&| feat\.? | ft\.? | x /i)[0].trim(); if (!name || !Api.on) return [];
+    try {
+      const b = await Api.get('/search?type=artist&limit=5&q=' + encodeURIComponent(name), 600000);
+      const l = Norm.list(b.artists && b.artists.items, Norm.artist);
+      const a = l.find((x) => x.name.toLowerCase() === name.toLowerCase()) || l[0]; if (!a) return [];
+      if (a.genres && a.genres.length) return a.genres.slice(0, 8);
+      const full = Norm.artist(await Api.get('/artists/' + encodeURIComponent(a.id), 600000));
+      return (full && full.genres || []).slice(0, 8);
+    } catch (e) { return []; }
+  }
+
   // in-app search (connected)
   let searchT = 0;
   function runSearch(e, now) {
@@ -998,7 +1012,7 @@
   window.LucielSpotify = {
     icon: I.tab,
     get source() { return source; },
-    activeSource, cmd, back, onState, refresh,
+    activeSource, cmd, back, onState, refresh, genresFor,
     onPerms() { readInfo(); if (open) { if (top().p === 'now') render(); else refresh(); } },
     show(host) {
       if (!root) { root = host; bind(root); }

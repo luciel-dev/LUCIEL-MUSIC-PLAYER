@@ -32,6 +32,8 @@
   const luciel = window.Luciel.create({ elements: {
     stage: $('stage'), pxStage: $('pxStage'), backArt: $('sceneArt'), backGlow: $('sceneGlow'), fx: $('fxCanvas'), sceneCanvas: $('sceneCanvas'),
     onScene: (sc) => { try { applySceneColors(sc); } catch (e) { /* before the player UI exists; applyTheme re-applies */ } $('sceneName').textContent = sc.name; renderMasInfo(); markSceneGrid(); if (current) refreshCover(); miniPush(); },
+    onRare: (r, first) => { if (first) toast(`✦ rare! Lucielle · ${r.name} — saved to Settings › Rare outfits`); try { DBG && DBG.add('genres', `rare outfit ${r.key}${first ? ' (first sighting)' : ''}`); } catch (e) {} if (typeof renderOutfits === 'function') renderOutfits(); },
+    onRareUnlock: (l) => { l.forEach((r) => toast(`✦ Unlocked: Lucielle · ${r.name} (${r.unlock.plays} plays) — wear it any time from Outfit`)); if (typeof renderOutfits === 'function') renderOutfits(); },
   } });
   const audio = engine.audio;
 
@@ -42,6 +44,7 @@
     bubbles: true, remember: true, order: [], currentId: null, position: 0, remaining: false,
     sceneColors: true, mascot: true, mascotSize: 'm', doze: true, strict: false, scene: 'auto', favorites: [],
     miniHideMain: true, miniBox: null, miniLarge: false,
+    genreAuto: true, dayMode: 'auto', outfit: '', weatherOn: false, weatherCity: '', weatherLoc: false,
   };
   const S = Object.assign({}, defaults, Settings.load());
   if (!Array.isArray(S.eq) || S.eq.length !== BANDS.length) S.eq = defaults.eq.slice();
@@ -396,6 +399,7 @@
     if (!moodChecked && audio.currentTime > 8) { moodChecked = true; luciel.moodCheck(); }
     if (current && !current.counted && (audio.currentTime > 30 || (audio.duration && audio.currentTime > audio.duration * 0.5))) {
       current.counted = true; current.plays = (current.plays || 0) + 1; current.lastPlayed = Date.now(); persist(current); library.refresh();
+      try { luciel.trackCounted(); } catch (e) {}
     }
   });
   // ---------------------------------------------------------- forgiving playback
@@ -1067,7 +1071,7 @@
       const classic = document.body.dataset.skin === 'classic';
       const e = classic ? vizMini.draw(active, dt) : vizBig.draw(active, dt);
       // energy for Lucielle / scenes
-      let energy = 0, bass = 0, vocal = 0, high = 0;
+      let energy = 0, bass = 0, vocal = 0, high = 0, guitar = 0;
       if (engine.analyser && active) {
         if (!frame.buf) frame.buf = new Uint8Array(engine.analyser.frequencyBinCount);
         const f = frame.buf; engine.analyser.getByteFrequencyData(f);
@@ -1079,10 +1083,14 @@
         const v0 = Math.round(300 / hz), v1 = Math.round(3400 / hz), h0 = Math.round(5000 / hz), h1 = Math.min(f.length - 1, Math.round(10000 / hz));
         let v = 0; for (let i = v0; i < v1; i++) v += f[i]; vocal = v / ((v1 - v0) * 255);
         let h = 0; for (let i = h0; i < h1; i++) h += f[i]; high = h / (Math.max(1, h1 - h0) * 255);
+        // guitar-heavy mids for the Alt Rock instrument pick: low-mid body (150–300 Hz) + bite (3.4–6 kHz), around the voice band
+        const g0 = Math.round(150 / hz), g1 = Math.max(g0 + 1, Math.round(300 / hz)), g2 = Math.round(6000 / hz);
+        let gs = 0; for (let i = g0; i < g1; i++) gs += f[i]; let gb = 0; for (let i = v1; i < g2; i++) gb += f[i];
+        guitar = 0.5 * gs / ((g1 - g0) * 255) + 0.5 * gb / (Math.max(1, g2 - v1) * 255);
         if (tracker.feed(bass, audio.currentTime) && !current.bpmInfo) renderBpm();
       }
       if (current && !current.bpmInfo && tracker.bpm && $('lcdBpm').textContent === '---') { $('lcdBpm').textContent = Math.round(tracker.bpm); }
-      luciel.tick({ playing: active, bpm: tracker.bpm, beatPos: tracker.beatAt(audio.currentTime), time: audio.currentTime, energy, bass, vocal, high, hasTracks: tracks.length > 0, pointerX, pointerY });
+      luciel.tick({ playing: active, bpm: tracker.bpm, beatPos: tracker.beatAt(audio.currentTime), time: audio.currentTime, energy, bass, vocal, high, guitar, hasTracks: tracks.length > 0, pointerX, pointerY });
       if (now - (frame.lastInfo || 0) > 1000) { frame.lastInfo = now; renderMasInfo(); }
       const beat = active ? Math.round(Math.min(1, e * 1.25) * 20) / 20 : 0;
       if (beat !== lastBeat) { document.documentElement.style.setProperty('--beat', beat); lastBeat = beat; }
@@ -1228,7 +1236,7 @@
   const packsUI = window.LucielPackUI.create({
     toast, esc, luciel, openOverlay: (id) => openOverlay(id), closeOverlays: () => closeOverlays(),
     setScene: (id) => setScene(id),
-    scenesChanged: () => { if (S.scene !== 'auto' && !window.Luciel.Scenes.byId(S.scene)) { S.scene = 'auto'; save(); } renderSceneGrid(); },
+    scenesChanged: () => { if (S.scene !== 'auto' && !window.Luciel.Scenes.byId(S.scene)) { S.scene = 'auto'; save(); } renderSceneGrid(); if (typeof renderOutfits === 'function') renderOutfits(); },
   });
 
   // --------------------------------------------------------------- Mini player / floater (js/mini.js)
@@ -1338,6 +1346,55 @@
     luciel.setOptions({ enabled: S.mascot, size: S.mascotSize, doze: S.doze, strict: S.strict, sceneOn: S.bubbles, ditherFx: !!S.ditherFx });
   }
   $('optMascot').addEventListener('change', (e) => { S.mascot = e.target.checked; applyMascotOpts(); save(); });
+
+  // --------------------------------------------------------------- genre-pack features (js/genres.js; data from packs, see PACKS.md)
+  const GEN = window.LucielGenres;
+  function applyGenreOpts() {
+    luciel.setGenreAuto(S.genreAuto !== false); luciel.setDayMode(S.dayMode || 'auto'); luciel.setOutfit(S.outfit || '');
+    $('optGenreAuto').checked = S.genreAuto !== false; $('optDayNight').value = S.dayMode || 'auto';
+    $('optWeather').checked = !!S.weatherOn; $('optWeatherCity').value = S.weatherCity || ''; $('optWeatherLoc').checked = !!S.weatherLoc;
+    renderOutfits();
+  }
+  function renderOutfits() {
+    const sel = $('optOutfit'); if (!sel) return;
+    const l = luciel.outfits.filter((o) => o.available);
+    if (S.outfit && !l.some((o) => o.key === S.outfit)) { /* pack removed: back to the scene's own */ }
+    sel.innerHTML = `<option value="">Scene’s own</option>` + l.map((o) => `<option value="${esc(o.key)}">${esc(o.name)}${o.rare ? ' ✦' : ''}${o.sceneName && !o.rare ? '' : o.sceneName ? ' · ' + esc(o.sceneName) : ''}</option>`).join('');
+    sel.value = l.some((o) => o.key === S.outfit) ? S.outfit : '';
+    $('btnRare').hidden = !luciel.rareCollection.length;
+  }
+  function setOutfit(key, quiet) { S.outfit = key || ''; luciel.setOutfit(S.outfit); renderOutfits(); save(); emit('settings'); if (!quiet) toast(S.outfit ? `Outfit: ${(luciel.outfits.find((o) => o.key === S.outfit) || {}).name || S.outfit}` : 'Outfit: each scene’s own'); }
+  /** rows for the rare-outfit collection (desktop dialog and phone sheet) */
+  function rareCollectionHTML() {
+    const l = luciel.rareCollection;
+    if (!l.length) return '<p class="rd-empty">Install a pack with rare outfits (for example Lucielle Genres) to start collecting.</p>';
+    return l.map((r) => `<div class="rd-item${r.unlocked ? ' got' : ''}" data-rare="${esc(r.key)}">${r.unlocked ? `<img src="${esc(r.thumb || '')}" alt="">` : '<span class="rd-lock">?</span>'}<div class="rd-txt"><b>${r.unlocked ? esc(r.name) : '???'}</b><span>${esc(r.sceneName)} · ${r.unlocked ? (r.found ? 'found' : 'unlocked') : `${Math.min(r.plays, r.need)}/${r.need} plays · 1 in ${Math.round(1 / (r.chance || 0.05))} per song`}</span></div>${r.unlocked ? `<button class="pbtn" data-wear="${esc(r.key)}">${S.outfit === r.key ? 'WEARING' : 'WEAR'}</button>` : ''}</div>`).join('');
+  }
+  function openRare() { $('rareList').innerHTML = rareCollectionHTML(); try { $('rareDlg').showModal(); } catch (e) { $('rareDlg').setAttribute('open', ''); } }
+  $('rareList').addEventListener('click', (e) => { const b = e.target.closest('[data-wear]'); if (b) { setOutfit(S.outfit === b.dataset.wear ? '' : b.dataset.wear); $('rareList').innerHTML = rareCollectionHTML(); } });
+  $('rareClose').onclick = () => { try { $('rareDlg').close(); } catch (e) { $('rareDlg').removeAttribute('open'); } };
+  $('btnRare').onclick = openRare;
+  $('optGenreAuto').addEventListener('change', (e) => { S.genreAuto = e.target.checked; luciel.setGenreAuto(S.genreAuto); save(); emit('settings'); toast(S.genreAuto ? 'Auto-switch by genre on — the scene follows each new song (a scene you pick wins)' : 'Auto-switch by genre off — the scene stays put'); });
+  $('optDayNight').addEventListener('change', (e) => { S.dayMode = e.target.value; luciel.setDayMode(S.dayMode); save(); emit('settings'); });
+  $('optOutfit').addEventListener('change', (e) => setOutfit(e.target.value));
+  setInterval(() => luciel.clockTick(), 60000);
+  // weather: Open-Meteo forecast + geocoding, no key; fetched only while the layer is on, every 30 min, cached; any failure = no layer
+  const weather = GEN ? GEN.createWeather({ fetch: window.fetch ? window.fetch.bind(window) : null, storage: (() => { try { return localStorage; } catch (e) { return null; } })(),
+    locate: () => new Promise((res, rej) => {
+      const N = window.LucielAndroid;
+      if (N && typeof N.coarseLocation === 'function') { window.__lucielLoc = (j) => { try { const p = JSON.parse(j); if (p && p.ok) res(p); else rej(new Error(p && p.error || 'no location')); } catch (e) { rej(e); } }; try { N.coarseLocation(); } catch (e) { rej(e); } return; }
+      if (!navigator.geolocation) return rej(new Error('no geolocation'));
+      navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lon: p.coords.longitude }), (e) => rej(e), { enableHighAccuracy: false, maximumAge: 3600000, timeout: 15000 });
+    }) }) : null;
+  function weatherSum() {
+    const w = weather && weather.state, el = $('weatherSum'); if (!el) return;
+    el.textContent = !S.weatherOn ? '' : !w || !w.at ? 'checking…' : w.error ? 'no weather right now' : `${w.place ? w.place + ': ' : ''}${w.kind || 'clear'}`;
+  }
+  if (weather) weather.onChange((k) => { luciel.setWeather(S.weatherOn ? k : null); weatherSum(); emit('weather'); });
+  function applyWeather() { if (!weather) return; weather.configure({ on: !!S.weatherOn && !!(S.weatherCity || S.weatherLoc), city: S.weatherCity || '', useLocation: !!S.weatherLoc && !S.weatherCity }); luciel.setWeather(S.weatherOn ? weather.kind : null); weatherSum(); }
+  $('optWeather').addEventListener('change', (e) => { S.weatherOn = e.target.checked; save(); applyWeather(); if (S.weatherOn && !S.weatherCity && !S.weatherLoc) toast('Weather layer: type a city or tick “Use my location”'); });
+  $('optWeatherCity').addEventListener('change', (e) => { S.weatherCity = e.target.value.trim().slice(0, 80); save(); applyWeather(); });
+  $('optWeatherLoc').addEventListener('change', (e) => { S.weatherLoc = e.target.checked; save(); applyWeather(); });
   $('optSize').addEventListener('change', (e) => { S.mascotSize = e.target.value; applyMascotOpts(); save(); });
   $('optDoze').addEventListener('change', (e) => { S.doze = e.target.checked; applyMascotOpts(); save(); });
   $('optSceneColors').addEventListener('change', (e) => { S.sceneColors = e.target.checked; SCOL.key = null; applySceneColors(luciel.scene); save(); toast(S.sceneColors ? 'Scene colours on — pack scenes recolour the player' : 'Scene colours off'); });
@@ -1474,7 +1531,7 @@
     document.body.classList.toggle('no-anim', !S.bubbles);
     $('optBubbles').checked = S.bubbles; $('optRemember').checked = S.remember;
     $('optMascot').checked = S.mascot; $('optSize').value = S.mascotSize; $('optDoze').checked = S.doze; $('optStrict').checked = S.strict; $('optDither').checked = !!S.ditherFx; $('optSceneColors').checked = S.sceneColors !== false;
-    applyMascotOpts(); luciel.setManual(S.scene || 'auto'); markSceneGrid();
+    applyMascotOpts(); luciel.setManual(S.scene || 'auto'); markSceneGrid(); applyGenreOpts(); applyWeather();
     engine.volume = S.volume; engine.muted = S.muted; engine.balance = S.balance;
     engine.gains = S.eq.slice(); engine.preampDb = S.preamp; engine.eqOn = S.eqOn;
     setVolume(S.volume, false); setMuted(S.muted);
@@ -1491,6 +1548,6 @@
 
   // test/debug hook
   window.Luciel.app = window.AeroAmp = { packs: packsUI, mini: { toggle: toggleMini, open: openMiniOverlay, close: closeMini, popOut: popOutMini, state: miniState, cmd: miniCmd, get overlay() { return MINI.overlay; }, get pip() { return MINI.pip; }, get isOpen() { return miniIsOpen(); } }, nativeOpen, library, editor, lib, editTracks, playList, enqueue, removeFromLibrary, luciel, tracker, setScene, toggleFavorite, addFiles, applyTheme, applyPreset, get settings() { return S; }, get tracks() { return tracks; }, get current() { return current; }, engine, playTrack, next, prev, THEMES, setVizMode,
-    openDebugLog, debugText, api: libApi, togglePlay, play, pause, stop, setShuffle, cycleRepeat, cycleViz, stepScene, sceneIds, setVolume, fmt, title: displayTitle, artist: displayArtist, fallbackCover, PALETTES, openOverlay, closeOverlays, toast, save, emit };
+    openDebugLog, debugText, api: libApi, setOutfit, openRare, rareCollectionHTML, renderOutfits, get weather() { return weather; }, applyWeather, togglePlay, play, pause, stop, setShuffle, cycleRepeat, cycleViz, stepScene, sceneIds, setVolume, fmt, title: displayTitle, artist: displayArtist, fallbackCover, PALETTES, openOverlay, closeOverlays, toast, save, emit };
   init();
 })();

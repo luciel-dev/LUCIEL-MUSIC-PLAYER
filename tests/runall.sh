@@ -10,4 +10,7 @@ echo "=== packtest.js (packs + mini player)"; node packtest.js 2>&1 | grep -v "G
 echo "=== stylestest.js (Lucielle Styles pack)"; node stylestest.js 2>&1 | grep -v "GL Driver" | grep -v "^PASS .* loop on stage" | tail -30
 echo "=== eventtest.js (music events from audio)"; node eventtest.js 2>&1 | tail -16
 echo "=== opacitytest.js (Lucielle always opaque: no flicker, solid crossfades, grid behind her)"; node opacitytest.js 2>&1 | grep -v "GL Driver"
+echo "=== genres-unit.js (Lucielle Genres logic: instruments, day/night, rare odds + unlocks, weather, schema, built pack)"; node genres-unit.js 2>&1 | grep -v "^PASS" | tail -12
+echo "=== genrestest.js (Lucielle Genres add-on: import, auto-switch, day/night, rare, outfit mix, instruments, weather mocked) Chrome"; node genrestest.js 2>&1 | grep -v "GL Driver" | grep -v "^PASS" | tail -20
+echo "=== genrestest.js Chromium 115"; PW=/workspace/pw114/node_modules/playwright-core CHROME=/workspace/pw114/browsers/chromium-1067/chrome-linux/chrome node genrestest.js 2>&1 | grep -v "GL Driver" | grep -v "^PASS" | tail -20
 echo DONE

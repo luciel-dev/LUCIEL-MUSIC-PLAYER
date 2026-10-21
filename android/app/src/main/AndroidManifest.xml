@@ -18,6 +18,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- optional "Connect Spotify" (Web API) and Spotify cover pictures; nothing else goes online -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- optional weather layer (off by default): approximate location only, asked when the listener ticks "Use my location" -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!-- see which music apps exist (labels / launch) -->
     <queries>
@@ -96,11 +98,20 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="audio/*" />
             </intent-filter>
-            <!-- visual packs (.zip) shared or opened from a file manager -->
+            <!-- visual packs (.zip) shared or opened from a file manager / Downloads ("Open with Luciel") -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
             </intent-filter>
         </activity>
 

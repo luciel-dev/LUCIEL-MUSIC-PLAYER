@@ -34,6 +34,8 @@
   const EMOTES = ['idle', 'happy', 'love', 'shy', 'smug', 'surprised', 'confused', 'flying', 'music', 'angry', 'bored', 'crying', 'sleepy', 'cloud', 'cloud-sleep'];
   // music events a pack character can react to (js/luciel.js detects them from the live spectrum) -> character.events
   const EVENTS = ['start', 'drop', 'hit', 'quiet', 'rise', 'sad', 'vocals'];
+  // Alt Rock style instrument loops (character.instruments): which band leads -> which emote
+  const INSTRUMENTS = ['bass', 'drums', 'vocals', 'guitar'];
   const EMOTE_RE = /^[a-z][a-z0-9-]{0,23}$/;
   const COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
   const MOODS = {   // default auto-pick ranges for packs that name a mood but give no explicit bpm / energy window
@@ -224,6 +226,84 @@
     };
     const preview = fileRef('pack.json: “preview”', m.preview, ['image'], false);
     if (m.preview === undefined) W.push('pack.json: no “preview” image; the first scene’s image is used in the Packs manager.');
+    /** character / rare-outfit object -> normalised (shared by scene characters and character.rareOutfits) */
+    const parseChar = (at, c) => {
+      const use = c.use === undefined ? (c.dance ? 'custom' : 'lucielle') : c.use;
+      if (!['lucielle', 'custom', 'none'].includes(use)) E.push(`${at}.use must be "lucielle", "custom" or "none".`);
+      const ch = { use, name: typeof c.name === 'string' ? c.name.slice(0, 40) : undefined, tier: undefined, dance: {}, emotes: {}, poses: strList(`${at}.poses`, c.poses, EMOTES), scale: 1 };
+      if (c.tier !== undefined) { if (['auto', ...TIERS].includes(c.tier)) ch.tier = c.tier; else E.push(`${at}.tier must be auto, slow, mid or fast.`); }
+      if (c.scale !== undefined) { if (num(c.scale) && c.scale >= 0.3 && c.scale <= 1.6) ch.scale = c.scale; else E.push(`${at}.scale must be between 0.3 and 1.6.`); }
+      if (c.dance !== undefined) {
+        if (!isObj(c.dance)) E.push(`${at}.dance must be an object with slow / mid / fast loops.`);
+        else for (const k of Object.keys(c.dance)) {
+          const d = c.dance[k], w = `${at}.dance.${k}`;
+          if (!TIERS.includes(k)) { W.push(`${w}: unknown tempo tier ignored (use slow, mid, fast).`); continue; }
+          if (!isObj(d)) { E.push(`${w} must be an object.`); continue; }
+          const loopBpm = num(d.loopBpm) && d.loopBpm >= 40 && d.loopBpm <= 240 ? d.loopBpm : (d.loopBpm === undefined ? { slow: 90, mid: 120, fast: 150 }[k] : (E.push(`${w}.loopBpm must be between 40 and 240.`), 120));
+          if (d.video !== undefined) {
+            const v = fileRef(`${w}.video`, d.video, ['video'], true);
+            const beats = num(d.beats) && d.beats >= 1 && d.beats <= 64 ? d.beats : (E.push(`${w}.beats (loop length in beats, 1–64) is required for a video loop.`), 8);
+            if (v) ch.dance[k] = { video: v, loopBpm, beats };
+            if (v && extOf(v) !== 'webm') W.push(`${w}.video: use a transparent WebM (VP9 with alpha) so the scene shows through.`);
+          } else {
+            const sh = fileRef(`${w}.sheet`, d.sheet, ['image'], true);
+            const frames = Number.isInteger(d.frames) && d.frames >= 1 && d.frames <= 512 ? d.frames : (E.push(`${w}.frames must be a whole number 1–512.`), 1);
+            const cols = Number.isInteger(d.columns) && d.columns >= 1 && d.columns <= 64 ? d.columns : (E.push(`${w}.columns must be a whole number 1–64.`), 1);
+            let beats = num(d.beats) && d.beats >= 1 && d.beats <= 64 ? d.beats : undefined;
+            if (!beats && num(d.fps) && d.fps > 0 && d.fps <= 60) beats = Math.max(1, Math.round(frames / d.fps * loopBpm / 60));
+            if (!beats) { E.push(`${w}: give “beats” (loop length in beats) or “fps”.`); beats = 4; }
+            if (sh) ch.dance[k] = { sheet: sh, frames, columns: cols, loopBpm, beats };
+          }
+        }
+      }
+      if (c.idle !== undefined) ch.idle = fileRef(`${at}.idle`, c.idle, ['image'], false);
+      if (c.emotes !== undefined) {
+        if (!isObj(c.emotes)) E.push(`${at}.emotes must be an object like { "happy": "emotes/happy.png" }.`);
+        else for (const k of Object.keys(c.emotes)) {
+          const w = `${at}.emotes.${k}`, v = c.emotes[k];
+          if (!EMOTE_RE.test(k)) { E.push(`${w}: emote names are 1–24 characters of a–z, 0–9 and “-”.`); continue; }
+          if (isObj(v)) {                                   // animated emote: a tempo-synced sprite-sheet loop
+            const sh = fileRef(`${w}.sheet`, v.sheet, ['image'], true);
+            const frames = Number.isInteger(v.frames) && v.frames >= 1 && v.frames <= 512 ? v.frames : (E.push(`${w}.frames must be a whole number 1–512.`), 1);
+            const cols = Number.isInteger(v.columns) && v.columns >= 1 && v.columns <= 64 ? v.columns : (E.push(`${w}.columns must be a whole number 1–64.`), 1);
+            const loopBpm = num(v.loopBpm) && v.loopBpm >= 40 && v.loopBpm <= 240 ? v.loopBpm : 120;
+            let beats = num(v.beats) && v.beats >= 1 && v.beats <= 64 ? v.beats : undefined;
+            if (!beats && num(v.fps) && v.fps > 0 && v.fps <= 60) beats = Math.max(1, Math.round(frames / v.fps * loopBpm / 60));
+            if (!beats) { E.push(`${w}: give “beats” or “fps” for an animated emote.`); beats = 4; }
+            if (sh) ch.emotes[k] = { sheet: sh, frames, columns: cols, loopBpm, beats };
+          } else { const f = fileRef(w, v, ['image'], true); if (f) ch.emotes[k] = f; }
+        }
+      }
+      if (c.events !== undefined) {
+        ch.events = {};
+        if (!isObj(c.events)) E.push(`${at}.events must be an object like { "drop": "headbang" }.`);
+        else for (const k of Object.keys(c.events)) {
+          const v = c.events[k], w = `${at}.events.${k}`;
+          if (!EVENTS.includes(k)) { W.push(`${w}: unknown music event ignored (allowed: ${EVENTS.join(', ')}).`); continue; }
+          if (typeof v !== 'string' || !EMOTE_RE.test(v)) { E.push(`${w} must be an emote name.`); continue; }
+          if (!ch.emotes[v] && !EMOTES.includes(v)) { E.push(`${w}: “${v}” is not one of this character's emotes.`); continue; }
+          ch.events[k] = v;
+        }
+      }
+      if (ch.use === 'custom' && !Object.keys(ch.dance).length && !ch.idle) E.push(`${at}: a custom character needs at least one dance loop (slow / mid / fast) or an idle image.`);
+      // Alt Rock style instrument loops: which emote to play while bass / drums / vocals / guitar lead (PACKS.md)
+      if (c.instruments !== undefined) {
+        if (!isObj(c.instruments)) E.push(`${at}.instruments must be an object like { "guitar": "inst-guitar" }.`);
+        else {
+          const o = {};
+          for (const k of Object.keys(c.instruments)) {
+            const v = c.instruments[k];
+            if (!INSTRUMENTS.includes(k)) { W.push(`${at}.instruments.${k}: unknown instrument ignored (allowed: ${INSTRUMENTS.join(', ')}).`); continue; }
+            if (typeof v !== 'string' || !ch.emotes[v]) { E.push(`${at}.instruments.${k} must name one of this character's emotes.`); continue; }
+            o[k] = v;
+          }
+          if (Object.keys(o).length) ch.instruments = o;
+        }
+      }
+      const aliased = (k) => EMOTES.some((b) => ch.emotes[b] && ch.emotes[b] !== ch.emotes[k] ? JSON.stringify(ch.emotes[b]) === JSON.stringify(ch.emotes[k]) : false);
+      for (const k of Object.keys(ch.emotes)) if (!EMOTES.includes(k) && !Object.values(ch.events || {}).includes(k) && !Object.values(ch.instruments || {}).includes(k) && !aliased(k)) W.push(`${at}.emotes.${k}: custom emote is not mapped in “events” or “instruments”, so it will never be shown.`);
+      return ch;
+    };
     // ---- scenes
     const scenes = [];
     if (!Array.isArray(m.scenes) || !m.scenes.length) E.push('pack.json: “scenes” must be a non-empty list.');
@@ -261,66 +341,41 @@
         const c = s.character === undefined ? {} : s.character;
         if (!isObj(c)) E.push(`${at}.character must be an object.`);
         else {
-          const use = c.use === undefined ? (c.dance ? 'custom' : 'lucielle') : c.use;
-          if (!['lucielle', 'custom', 'none'].includes(use)) E.push(`${at}.character.use must be "lucielle", "custom" or "none".`);
-          const ch = { use, name: typeof c.name === 'string' ? c.name.slice(0, 40) : undefined, tier: undefined, dance: {}, emotes: {}, poses: strList(`${at}.character.poses`, c.poses, EMOTES), scale: 1 };
-          if (c.tier !== undefined) { if (['auto', ...TIERS].includes(c.tier)) ch.tier = c.tier; else E.push(`${at}.character.tier must be auto, slow, mid or fast.`); }
-          if (c.scale !== undefined) { if (num(c.scale) && c.scale >= 0.3 && c.scale <= 1.6) ch.scale = c.scale; else E.push(`${at}.character.scale must be between 0.3 and 1.6.`); }
-          if (c.dance !== undefined) {
-            if (!isObj(c.dance)) E.push(`${at}.character.dance must be an object with slow / mid / fast loops.`);
-            else for (const k of Object.keys(c.dance)) {
-              const d = c.dance[k], w = `${at}.character.dance.${k}`;
-              if (!TIERS.includes(k)) { W.push(`${w}: unknown tempo tier ignored (use slow, mid, fast).`); continue; }
-              if (!isObj(d)) { E.push(`${w} must be an object.`); continue; }
-              const loopBpm = num(d.loopBpm) && d.loopBpm >= 40 && d.loopBpm <= 240 ? d.loopBpm : (d.loopBpm === undefined ? { slow: 90, mid: 120, fast: 150 }[k] : (E.push(`${w}.loopBpm must be between 40 and 240.`), 120));
-              if (d.video !== undefined) {
-                const v = fileRef(`${w}.video`, d.video, ['video'], true);
-                const beats = num(d.beats) && d.beats >= 1 && d.beats <= 64 ? d.beats : (E.push(`${w}.beats (loop length in beats, 1–64) is required for a video loop.`), 8);
-                if (v) ch.dance[k] = { video: v, loopBpm, beats };
-                if (v && extOf(v) !== 'webm') W.push(`${w}.video: use a transparent WebM (VP9 with alpha) so the scene shows through.`);
-              } else {
-                const sh = fileRef(`${w}.sheet`, d.sheet, ['image'], true);
-                const frames = Number.isInteger(d.frames) && d.frames >= 1 && d.frames <= 512 ? d.frames : (E.push(`${w}.frames must be a whole number 1–512.`), 1);
-                const cols = Number.isInteger(d.columns) && d.columns >= 1 && d.columns <= 64 ? d.columns : (E.push(`${w}.columns must be a whole number 1–64.`), 1);
-                let beats = num(d.beats) && d.beats >= 1 && d.beats <= 64 ? d.beats : undefined;
-                if (!beats && num(d.fps) && d.fps > 0 && d.fps <= 60) beats = Math.max(1, Math.round(frames / d.fps * loopBpm / 60));
-                if (!beats) { E.push(`${w}: give “beats” (loop length in beats) or “fps”.`); beats = 4; }
-                if (sh) ch.dance[k] = { sheet: sh, frames, columns: cols, loopBpm, beats };
-              }
+          const ch = parseChar(`${at}.character`, c);
+          // rare outfits: alternative characters for the same scene (chance per track / play-milestone unlock)
+          if (c.rareOutfits !== undefined) {
+            if (!Array.isArray(c.rareOutfits)) E.push(`${at}.character.rareOutfits must be a list.`);
+            else {
+              ch.rareOutfits = []; const ids = new Set();
+              c.rareOutfits.slice(0, 8).forEach((r, j) => {
+                const w = `${at}.character.rareOutfits[${j}]`;
+                if (!isObj(r) || typeof r.id !== 'string' || !SCENE_ID_RE.test(r.id) || ids.has(r.id)) { E.push(`${w} needs a unique “id” (a–z, 0–9, “-”).`); return; }
+                ids.add(r.id);
+                const rc = parseChar(w, Object.assign({ use: 'custom' }, r));
+                const o = Object.assign(rc, { id: r.id, name: typeof r.name === 'string' ? r.name.slice(0, 40) : r.id, use: 'custom' });
+                if (r.chance !== undefined) { if (num(r.chance) && r.chance >= 0 && r.chance <= 1) o.chance = r.chance; else E.push(`${w}.chance must be between 0 and 1 (0.05 = 1 in 20).`); } else o.chance = 0.05;
+                if (r.unlock !== undefined) { if (isObj(r.unlock) && Number.isInteger(r.unlock.plays) && r.unlock.plays >= 1 && r.unlock.plays <= 100000) o.unlock = { plays: r.unlock.plays }; else E.push(`${w}.unlock must be { "plays": N } (a whole number ≥ 1).`); }
+                if (r.thumb !== undefined) o.thumb = fileRef(`${w}.thumb`, r.thumb, ['image'], false);
+                ch.rareOutfits.push(o);
+              });
             }
           }
-          if (c.idle !== undefined) ch.idle = fileRef(`${at}.character.idle`, c.idle, ['image'], false);
-          if (c.emotes !== undefined) {
-            if (!isObj(c.emotes)) E.push(`${at}.character.emotes must be an object like { "happy": "emotes/happy.png" }.`);
-            else for (const k of Object.keys(c.emotes)) {
-              const w = `${at}.character.emotes.${k}`, v = c.emotes[k];
-              if (!EMOTE_RE.test(k)) { E.push(`${w}: emote names are 1–24 characters of a–z, 0–9 and “-”.`); continue; }
-              if (isObj(v)) {                                   // animated emote: a tempo-synced sprite-sheet loop
-                const sh = fileRef(`${w}.sheet`, v.sheet, ['image'], true);
-                const frames = Number.isInteger(v.frames) && v.frames >= 1 && v.frames <= 512 ? v.frames : (E.push(`${w}.frames must be a whole number 1–512.`), 1);
-                const cols = Number.isInteger(v.columns) && v.columns >= 1 && v.columns <= 64 ? v.columns : (E.push(`${w}.columns must be a whole number 1–64.`), 1);
-                const loopBpm = num(v.loopBpm) && v.loopBpm >= 40 && v.loopBpm <= 240 ? v.loopBpm : 120;
-                let beats = num(v.beats) && v.beats >= 1 && v.beats <= 64 ? v.beats : undefined;
-                if (!beats && num(v.fps) && v.fps > 0 && v.fps <= 60) beats = Math.max(1, Math.round(frames / v.fps * loopBpm / 60));
-                if (!beats) { E.push(`${w}: give “beats” or “fps” for an animated emote.`); beats = 4; }
-                if (sh) ch.emotes[k] = { sheet: sh, frames, columns: cols, loopBpm, beats };
-              } else { const f = fileRef(w, v, ['image'], true); if (f) ch.emotes[k] = f; }
-            }
-          }
-          if (c.events !== undefined) {
-            ch.events = {};
-            if (!isObj(c.events)) E.push(`${at}.character.events must be an object like { "drop": "headbang" }.`);
-            else for (const k of Object.keys(c.events)) {
-              const v = c.events[k], w = `${at}.character.events.${k}`;
-              if (!EVENTS.includes(k)) { W.push(`${w}: unknown music event ignored (allowed: ${EVENTS.join(', ')}).`); continue; }
-              if (typeof v !== 'string' || !EMOTE_RE.test(v)) { E.push(`${w} must be an emote name.`); continue; }
-              if (!ch.emotes[v] && !EMOTES.includes(v)) { E.push(`${w}: “${v}” is not one of this character's emotes.`); continue; }
-              ch.events[k] = v;
-            }
-          }
-          for (const k of Object.keys(ch.emotes)) if (!EMOTES.includes(k) && !Object.values(ch.events || {}).includes(k)) W.push(`${at}.character.emotes.${k}: custom emote is not mapped in “events”, so it will never be shown.`);
-          if (ch.use === 'custom' && !Object.keys(ch.dance).length && !ch.idle) E.push(`${at}.character: a custom character needs at least one dance loop (slow / mid / fast) or an idle image.`);
           n.character = ch;
+        }
+        // day / night versions of the background (the app picks one by local time: Settings › Day / night)
+        if (s.variants !== undefined) {
+          if (!isObj(s.variants)) E.push(`${at}.variants must be an object like { "day": { "image": "…" }, "night": { … } }.`);
+          else {
+            n.variants = {};
+            for (const k of Object.keys(s.variants)) {
+              const v = s.variants[k], w = `${at}.variants.${k}`;
+              if (!['day', 'night'].includes(k)) { W.push(`${w}: unknown variant ignored (use day or night).`); continue; }
+              if (!isObj(v)) { E.push(`${w} must be an object.`); continue; }
+              const o = { image: fileRef(`${w}.image`, v.image, ['image'], true), video: fileRef(`${w}.video`, v.video, ['video'], false), glow: fileRef(`${w}.glow`, v.glow, ['image'], false),
+                pixel: fileRef(`${w}.pixel`, v.pixel, ['image'], false), pixelVideo: fileRef(`${w}.pixelVideo`, v.pixelVideo, ['video'], false) };
+              if (o.image) n.variants[k] = o;
+            }
+          }
         }
         // effects
         n.effects = [];
@@ -364,6 +419,7 @@
           genres: strList(`${at}.match.genres`, mt.genres), coverGenres: strList(`${at}.match.coverGenres`, mt.coverGenres),
           moods: strList(`${at}.match.moods`, mt.moods), themes: strList(`${at}.match.themes`, mt.themes, PALETTES), skins: strList(`${at}.match.skins`, mt.skins, SKINS),
           bpm: range(`${at}.match.bpm`, mt.bpm, 0, 999), energy: range(`${at}.match.energy`, mt.energy, 0, 1),
+          priority: mt.priority === undefined ? 0 : num(mt.priority) && mt.priority >= 0 && mt.priority <= 9 ? mt.priority : (E.push(`${at}.match.priority must be a number from 0 to 9.`), 0),
         };
         if (!opts.builtin && !n.match.genres.length && !n.match.moods.length && !n.match.bpm) W.push(`${at}: no genres, moods or bpm in “match”, so it will only appear when picked by hand.`);
         scenes.push(n);
@@ -387,6 +443,13 @@
   /** normalized pack -> scene objects for the renderer (js/luciel.js). url(path) resolves a pack file to a loadable URL. */
   function toScenes(pack, url, opts = {}) {
     const builtin = !!opts.builtin;
+    const charOut = (ch) => {
+      const d = {}; for (const k of Object.keys(ch.dance || {})) { const x = ch.dance[k]; d[k] = Object.assign({}, x, x.sheet ? { sheet: url(x.sheet) } : { video: url(x.video) }); }
+      const em = {}; for (const k of Object.keys(ch.emotes || {})) { const e = ch.emotes[k]; em[k] = typeof e === 'string' ? url(e) : Object.assign({}, e, { sheet: url(e.sheet) }); }
+      const o = { use: ch.use === 'lucielle' ? 'lucielle' : 'custom', name: ch.name, dance: d, emotes: em, idle: ch.idle ? url(ch.idle) : undefined, scale: ch.scale || 1, events: ch.events ? Object.assign({}, ch.events) : undefined };
+      if (ch.instruments) o.instruments = Object.assign({}, ch.instruments);
+      return o;
+    };
     return pack.scenes.map((s) => {
       const bg = s.background, fx = s.effects || [], has = (t) => fx.some((f) => f.type === t);
       const kind = bg.featuresCharacter ? 'full' : s.pixel ? 'pixel' : bg.video || bg.motion === 'drift' ? 'video' : 'layered';
@@ -420,14 +483,18 @@
         o.tempoSync = bg.tempoSync !== false;
         if (ch.use === 'none') o.char = { use: 'none' };
         else if (ch.use === 'custom' || Object.keys(ch.dance || {}).length || Object.keys(ch.emotes || {}).length || ch.idle) {
-          const d = {}; for (const k of Object.keys(ch.dance || {})) { const x = ch.dance[k]; d[k] = Object.assign({}, x, x.sheet ? { sheet: url(x.sheet) } : { video: url(x.video) }); }
-          const em = {}; for (const k of Object.keys(ch.emotes || {})) { const e = ch.emotes[k]; em[k] = typeof e === 'string' ? url(e) : Object.assign({}, e, { sheet: url(e.sheet) }); }
-          o.char = { use: ch.use === 'lucielle' ? 'lucielle' : 'custom', name: ch.name, dance: d, emotes: em, idle: ch.idle ? url(ch.idle) : undefined, scale: ch.scale || 1, events: ch.events ? Object.assign({}, ch.events) : undefined };
+          o.char = charOut(ch);
+          if (ch.rareOutfits && ch.rareOutfits.length) o.char.rareOutfits = ch.rareOutfits.map((r) => Object.assign(charOut(r), { id: r.id, name: r.name, chance: r.chance, unlock: r.unlock ? Object.assign({}, r.unlock) : undefined, thumb: r.thumb ? url(r.thumb) : r.idle ? url(r.idle) : undefined }));
         } else if (ch.scale && ch.scale !== 1) o.char = { use: 'lucielle', scale: ch.scale, dance: {}, emotes: {} };
+        if (s.variants) {
+          o.variants = {};
+          for (const k of Object.keys(s.variants)) { const v = s.variants[k]; o.variants[k] = { image: url(v.image), video: v.video ? url(v.video) : undefined, glow: v.glow ? url(v.glow) : undefined, px: url(v.pixel || v.image), pixelVideo: v.pixelVideo ? url(v.pixelVideo) : undefined }; }
+        }
+        if (s.match.priority) o.priority = s.match.priority;
       }
       return o;
     });
   }
 
-  return { FORMAT, LIMITS, TYPES, MIME, EFFECTS, PARTICLES, PALETTES, SKINS, TIERS, EMOTES, EVENTS, MOODS, ID_RE, extOf, typeOf, safePath, sniff, crc32, unzip, collect, validate, check, toScenes, PackError, DANGEROUS, SKIP, mb };
+  return { FORMAT, LIMITS, TYPES, MIME, EFFECTS, PARTICLES, PALETTES, SKINS, TIERS, EMOTES, EVENTS, INSTRUMENTS, MOODS, ID_RE, extOf, typeOf, safePath, sniff, crc32, unzip, collect, validate, check, toScenes, PackError, DANGEROUS, SKIP, mb };
 });

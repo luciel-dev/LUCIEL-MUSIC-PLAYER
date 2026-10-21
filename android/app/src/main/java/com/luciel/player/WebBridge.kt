@@ -85,6 +85,8 @@ class WebBridge(private val act: MainActivity) {
     @JavascriptInterface fun pickAudio(id: Int) = main.post { act.pickAudio(id) }
     @JavascriptInterface fun pickFolder(id: Int, audioOnly: Boolean) = main.post { act.pickTree(id, audioOnly) }
     @JavascriptInterface fun requestAudioPermission(id: Int) = main.post { act.requestAudioPermission(id) }
+    /** weather layer: approximate location -> window.__lucielLoc(json) (asks for ACCESS_COARSE_LOCATION once) */
+    @JavascriptInterface fun coarseLocation() { main.post { act.coarseLocation() } }
 
     /** tag editor: overwrite a MediaStore / SAF file the user picked (asks Android for consent when needed) */
     @JavascriptInterface fun writeFile(id: Int, uri: String, b64: String) = io.execute {

@@ -190,3 +190,16 @@ body.no-anim .scene-canvas { display: none !important; }
 /* mini-player toggle */
 .tb-btn.tb-mini.on { color: var(--accent-ink, #fff); background: linear-gradient(180deg, var(--accent-2), var(--accent)) !important; box-shadow: 0 0 10px var(--accent-glow) !important; }
 .skin-classic .tb-btn.tb-mini.on { background: var(--lcd-bg) !important; color: var(--lcd-fg); }
+
+/* ---- genre packs: rare-outfit collection (desktop dialog + phone sheet) */
+.rare-dlg { border: 1px solid var(--c-frame-2, #888); border-radius: 12px; padding: 0; background: var(--bg-2, #1d1d26); color: var(--text, #eee); min-width: 340px; max-width: 92vw; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+.rare-dlg::backdrop { background: rgba(0,0,0,.45); }
+.rd-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.rare-list { max-height: 70vh; overflow: auto; padding: 8px 10px 12px; }
+.rd-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 10px; margin: 4px 0; background: rgba(255,255,255,.05); }
+.rd-item img, .rd-item .rd-lock { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; flex: none; }
+.rd-item .rd-lock { display: grid; place-items: center; font-size: 26px; font-weight: 700; background: rgba(0,0,0,.35); color: rgba(255,255,255,.5); }
+.rd-item.got { background: linear-gradient(90deg, rgba(255,215,90,.16), rgba(255,140,220,.10)); }
+.rd-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rd-txt span { font-size: 12px; opacity: .75; }
+.rd-empty { opacity: .8; padding: 8px; }

@@ -53,8 +53,8 @@ patch('js/app.js', [
    '        const f = frame.buf; AN.getByteFrequencyData(f);\n        const hz = AN.context.sampleRate / AN.fftSize;', 'ext analyser read'],
   ['        if (tracker.feed(bass, audio.currentTime) && !current.bpmInfo) renderBpm();',
    '        if (tracker.feed(bass, MT) && current && !current.bpmInfo && !XT) renderBpm();', 'ext tracker feed'],
-  ['      luciel.tick({ playing: active, bpm: tracker.bpm, beatPos: tracker.beatAt(audio.currentTime), time: audio.currentTime, energy, bass, vocal, high, hasTracks: tracks.length > 0, pointerX, pointerY });',
-   '      luciel.tick({ playing: active, bpm: tracker.bpm, beatPos: tracker.beatAt(MT), time: MT, energy, bass, vocal, high, hasTracks: tracks.length > 0 || !!XT, pointerX, pointerY });', 'ext tick'],
+  ['      luciel.tick({ playing: active, bpm: tracker.bpm, beatPos: tracker.beatAt(audio.currentTime), time: audio.currentTime, energy, bass, vocal, high, guitar, hasTracks: tracks.length > 0, pointerX, pointerY });',
+   '      luciel.tick({ playing: active, bpm: tracker.bpm, beatPos: tracker.beatAt(MT), time: MT, energy, bass, vocal, high, guitar, hasTracks: tracks.length > 0 || !!XT, pointerX, pointerY });', 'ext tick'],
   // expose a few internals the Android layer needs
   ["window.Luciel.app = window.AeroAmp = { packs: packsUI,",
    "window.Luciel.app = window.AeroAmp = { tracker, vizBig, vizMini, togglePlay, setVolume, openFiles, openFolder, persist, packs: packsUI,", 'expose internals'],

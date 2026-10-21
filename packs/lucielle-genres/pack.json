@@ -1,0 +1,1767 @@
+{
+ "format": "luciel-pack/1",
+ "id": "lucielle-genres",
+ "name": "Lucielle Genres",
+ "author": "pj",
+ "version": "1.0.0",
+ "description": "Five genre stages for Lucielle: Alt Rock (she switches guitar / bass / drums / mic with the music), Hip-Hop rooftop, R&B rainy night, Indie garage and Acoustic campfire. Animated day and night versions, a rare outfit per genre, auto-switch by genre.",
+ "preview": "preview.jpg",
+ "scenes": [
+  {
+   "id": "alt-rock",
+   "name": "Alt Rock Stage",
+   "thumb": "bg/alt-rock-thumb.jpg",
+   "background": {
+    "image": "bg/alt-rock-night.jpg",
+    "video": "bg/alt-rock-night.mp4",
+    "glow": "bg/alt-rock-night-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "variants": {
+    "day": {
+     "image": "bg/alt-rock-day.jpg",
+     "video": "bg/alt-rock-day.mp4",
+     "glow": "bg/alt-rock-day-glow.jpg"
+    },
+    "night": {
+     "image": "bg/alt-rock-night.jpg",
+     "video": "bg/alt-rock-night.mp4",
+     "glow": "bg/alt-rock-night-glow.jpg"
+    }
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Static Halo",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/static-halo-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/static-halo-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/static-halo-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/static-halo-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/static-halo-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/static-halo-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/static-halo-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/static-halo-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/static-halo-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/static-halo-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "inst-guitar": {
+      "sheet": "char/static-halo-inst-guitar.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "inst-bass": {
+      "sheet": "char/static-halo-inst-bass.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "inst-drums": {
+      "sheet": "char/static-halo-inst-drums.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "inst-mic": {
+      "sheet": "char/static-halo-inst-mic.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/static-halo-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/static-halo-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/static-halo-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/static-halo-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "sad": "sad",
+     "vocals": "sing",
+     "rise": "inst-guitar"
+    },
+    "instruments": {
+     "guitar": "inst-guitar",
+     "bass": "inst-bass",
+     "drums": "inst-drums",
+     "vocals": "inst-mic"
+    },
+    "rareOutfits": [
+     {
+      "id": "leather-jacket",
+      "name": "Leather Jacket",
+      "chance": 0.05,
+      "unlock": {
+       "plays": 25
+      },
+      "thumb": "char/static-halo-rare-thumb.jpg",
+      "idle": "char/static-halo-rare-idle.webp",
+      "dance": {
+       "slow": {
+        "sheet": "char/static-halo-rare-slow.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 80
+       },
+       "mid": {
+        "sheet": "char/static-halo-rare-mid.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 112
+       },
+       "fast": {
+        "sheet": "char/static-halo-rare-fast.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 150
+       }
+      },
+      "emotes": {
+       "happy": {
+        "sheet": "char/static-halo-rare-happy.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "headbang": {
+        "sheet": "char/static-halo-rare-headbang.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "shocked": {
+        "sheet": "char/static-halo-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "yawn": {
+        "sheet": "char/static-halo-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sad": {
+        "sheet": "char/static-halo-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sing": {
+        "sheet": "char/static-halo-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "inst-guitar": {
+        "sheet": "char/static-halo-rare-inst-guitar.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "inst-bass": {
+        "sheet": "char/static-halo-rare-inst-bass.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "inst-drums": {
+        "sheet": "char/static-halo-rare-inst-drums.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "inst-mic": {
+        "sheet": "char/static-halo-rare-inst-mic.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "surprised": {
+        "sheet": "char/static-halo-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sleepy": {
+        "sheet": "char/static-halo-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "crying": {
+        "sheet": "char/static-halo-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "music": {
+        "sheet": "char/static-halo-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       }
+      },
+      "events": {
+       "start": "happy",
+       "drop": "headbang",
+       "hit": "shocked",
+       "quiet": "yawn",
+       "sad": "sad",
+       "vocals": "sing",
+       "rise": "inst-guitar"
+      },
+      "instruments": {
+       "guitar": "inst-guitar",
+       "bass": "inst-bass",
+       "drums": "inst-drums",
+       "vocals": "inst-mic"
+      }
+     }
+    ]
+   },
+   "particles": [
+    "sparks",
+    "dust"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.25,
+    "shake": 0.6,
+    "flash": 1.0,
+    "particles": 0.8,
+    "glowColor": "#ff3b8d",
+    "beatBurst": "sparks"
+   },
+   "themeDefault": "red",
+   "colors": {
+    "base": "red",
+    "accent": "#ff2e7e",
+    "accent2": "#ff5a3c",
+    "glow": "#ff3b8d",
+    "lcd": "#ff8ab8",
+    "bg": [
+     "#3a0a22",
+     "#1a0410",
+     "#070105"
+    ],
+    "frame": [
+     "#c9c9cf",
+     "#7d7d88",
+     "#3a3a44"
+    ]
+   },
+   "match": {
+    "genres": [
+     "alternative",
+     "alt rock",
+     "alt-rock",
+     "alternative rock",
+     "punk",
+     "pop punk",
+     "punk rock",
+     "post-punk",
+     "grunge",
+     "emo",
+     "hard rock",
+     "rock",
+     "garage rock",
+     "metal",
+     "nu metal",
+     "skate punk",
+     "post-hardcore"
+    ],
+    "moods": [
+     "hype",
+     "dark"
+    ],
+    "bpm": [
+     112,
+     200
+    ],
+    "energy": [
+     0.55,
+     1.0
+    ],
+    "priority": 5,
+    "skins": [
+     "aero",
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "hip-hop",
+   "name": "Hip-Hop Rooftop",
+   "thumb": "bg/hip-hop-thumb.jpg",
+   "background": {
+    "image": "bg/hip-hop-night.jpg",
+    "video": "bg/hip-hop-night.mp4",
+    "glow": "bg/hip-hop-night-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "variants": {
+    "day": {
+     "image": "bg/hip-hop-day.jpg",
+     "video": "bg/hip-hop-day.mp4",
+     "glow": "bg/hip-hop-day-glow.jpg"
+    },
+    "night": {
+     "image": "bg/hip-hop-night.jpg",
+     "video": "bg/hip-hop-night.mp4",
+     "glow": "bg/hip-hop-night-glow.jpg"
+    }
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Block Party",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/block-party-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/block-party-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/block-party-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/block-party-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/block-party-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/block-party-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/block-party-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/block-party-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/block-party-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/block-party-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "lean": {
+      "sheet": "char/block-party-lean.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shimmy": {
+      "sheet": "char/block-party-shimmy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/block-party-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/block-party-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/block-party-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/block-party-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "lean",
+     "sad": "sad",
+     "vocals": "sing",
+     "rise": "shimmy"
+    },
+    "rareOutfits": [
+     {
+      "id": "puffer",
+      "name": "Puffer Jacket",
+      "chance": 0.05,
+      "unlock": {
+       "plays": 25
+      },
+      "thumb": "char/block-party-rare-thumb.jpg",
+      "idle": "char/block-party-rare-idle.webp",
+      "dance": {
+       "slow": {
+        "sheet": "char/block-party-rare-slow.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 80
+       },
+       "mid": {
+        "sheet": "char/block-party-rare-mid.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 112
+       },
+       "fast": {
+        "sheet": "char/block-party-rare-fast.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 150
+       }
+      },
+      "emotes": {
+       "happy": {
+        "sheet": "char/block-party-rare-happy.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "headbang": {
+        "sheet": "char/block-party-rare-headbang.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "shocked": {
+        "sheet": "char/block-party-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "yawn": {
+        "sheet": "char/block-party-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sad": {
+        "sheet": "char/block-party-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sing": {
+        "sheet": "char/block-party-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "lean": {
+        "sheet": "char/block-party-rare-lean.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "shimmy": {
+        "sheet": "char/block-party-rare-shimmy.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "surprised": {
+        "sheet": "char/block-party-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sleepy": {
+        "sheet": "char/block-party-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "crying": {
+        "sheet": "char/block-party-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "music": {
+        "sheet": "char/block-party-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       }
+      },
+      "events": {
+       "start": "happy",
+       "drop": "headbang",
+       "hit": "shocked",
+       "quiet": "lean",
+       "sad": "sad",
+       "vocals": "sing",
+       "rise": "shimmy"
+      }
+     }
+    ]
+   },
+   "particles": [
+    "sparkles"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.25,
+    "shake": 0.6,
+    "flash": 1.0,
+    "particles": 0.8,
+    "glowColor": "#c77dff",
+    "beatBurst": "neon"
+   },
+   "themeDefault": "blue",
+   "colors": {
+    "base": "blue",
+    "accent": "#b06bff",
+    "accent2": "#ffb347",
+    "glow": "#c77dff",
+    "lcd": "#d7b4ff",
+    "bg": [
+     "#2a1450",
+     "#140a2c",
+     "#06030f"
+    ],
+    "frame": [
+     "#d9c8ff",
+     "#9f7fe0",
+     "#5a3a9a"
+    ]
+   },
+   "match": {
+    "genres": [
+     "hip hop",
+     "hip-hop",
+     "hiphop",
+     "rap",
+     "trap",
+     "drill",
+     "boom bap",
+     "grime",
+     "gangsta rap",
+     "conscious hip hop",
+     "underground hip hop",
+     "cloud rap",
+     "east coast hip hop",
+     "west coast hip hop"
+    ],
+    "moods": [
+     "groove"
+    ],
+    "bpm": [
+     78,
+     108
+    ],
+    "energy": [
+     0.4,
+     0.9
+    ],
+    "priority": 5,
+    "skins": [
+     "aero",
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "rnb",
+   "name": "R&B Rainy Night",
+   "thumb": "bg/rnb-thumb.jpg",
+   "background": {
+    "image": "bg/rnb-night.jpg",
+    "video": "bg/rnb-night.mp4",
+    "glow": "bg/rnb-night-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "variants": {
+    "day": {
+     "image": "bg/rnb-day.jpg",
+     "video": "bg/rnb-day.mp4",
+     "glow": "bg/rnb-day-glow.jpg"
+    },
+    "night": {
+     "image": "bg/rnb-night.jpg",
+     "video": "bg/rnb-night.mp4",
+     "glow": "bg/rnb-night-glow.jpg"
+    }
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Velvet Hour",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/velvet-hour-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/velvet-hour-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/velvet-hour-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/velvet-hour-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/velvet-hour-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/velvet-hour-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/velvet-hour-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/velvet-hour-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/velvet-hour-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/velvet-hour-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "hearts": {
+      "sheet": "char/velvet-hour-hearts.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "spin": {
+      "sheet": "char/velvet-hour-spin.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/velvet-hour-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/velvet-hour-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/velvet-hour-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/velvet-hour-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "hearts",
+     "sad": "sad",
+     "vocals": "sing",
+     "rise": "spin"
+    },
+    "rareOutfits": [
+     {
+      "id": "sparkle-gown",
+      "name": "Sparkly Gown",
+      "chance": 0.05,
+      "unlock": {
+       "plays": 25
+      },
+      "thumb": "char/velvet-hour-rare-thumb.jpg",
+      "idle": "char/velvet-hour-rare-idle.webp",
+      "dance": {
+       "slow": {
+        "sheet": "char/velvet-hour-rare-slow.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 80
+       },
+       "mid": {
+        "sheet": "char/velvet-hour-rare-mid.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 112
+       },
+       "fast": {
+        "sheet": "char/velvet-hour-rare-fast.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 150
+       }
+      },
+      "emotes": {
+       "happy": {
+        "sheet": "char/velvet-hour-rare-happy.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "headbang": {
+        "sheet": "char/velvet-hour-rare-headbang.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "shocked": {
+        "sheet": "char/velvet-hour-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "yawn": {
+        "sheet": "char/velvet-hour-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sad": {
+        "sheet": "char/velvet-hour-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sing": {
+        "sheet": "char/velvet-hour-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "hearts": {
+        "sheet": "char/velvet-hour-rare-hearts.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "spin": {
+        "sheet": "char/velvet-hour-rare-spin.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "surprised": {
+        "sheet": "char/velvet-hour-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sleepy": {
+        "sheet": "char/velvet-hour-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "crying": {
+        "sheet": "char/velvet-hour-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "music": {
+        "sheet": "char/velvet-hour-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       }
+      },
+      "events": {
+       "start": "happy",
+       "drop": "headbang",
+       "hit": "shocked",
+       "quiet": "hearts",
+       "sad": "sad",
+       "vocals": "sing",
+       "rise": "spin"
+      }
+     }
+    ]
+   },
+   "particles": [
+    "hearts"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.25,
+    "shake": 0.6,
+    "flash": 1.0,
+    "particles": 0.8,
+    "glowColor": "#e488ff",
+    "beatBurst": "hearts"
+   },
+   "themeDefault": "blue",
+   "colors": {
+    "base": "blue",
+    "accent": "#e07ad8",
+    "accent2": "#ffb3d9",
+    "glow": "#e488ff",
+    "lcd": "#f2c4ff",
+    "bg": [
+     "#3b2150",
+     "#1c1030",
+     "#0a0614"
+    ],
+    "frame": [
+     "#e6d3f2",
+     "#b08cc8",
+     "#6b4a85"
+    ]
+   },
+   "match": {
+    "genres": [
+     "r&b",
+     "rnb",
+     "r and b",
+     "rhythm and blues",
+     "soul",
+     "neo soul",
+     "neo-soul",
+     "contemporary r&b",
+     "alternative r&b",
+     "quiet storm",
+     "slow jam",
+     "motown",
+     "funk"
+    ],
+    "moods": [
+     "love",
+     "chill"
+    ],
+    "bpm": [
+     60,
+     104
+    ],
+    "energy": [
+     0.12,
+     0.6
+    ],
+    "priority": 5,
+    "skins": [
+     "aero",
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "indie-rock",
+   "name": "Indie Garage",
+   "thumb": "bg/indie-rock-thumb.jpg",
+   "background": {
+    "image": "bg/indie-rock-day.jpg",
+    "video": "bg/indie-rock-day.mp4",
+    "glow": "bg/indie-rock-day-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "variants": {
+    "day": {
+     "image": "bg/indie-rock-day.jpg",
+     "video": "bg/indie-rock-day.mp4",
+     "glow": "bg/indie-rock-day-glow.jpg"
+    },
+    "night": {
+     "image": "bg/indie-rock-night.jpg",
+     "video": "bg/indie-rock-night.mp4",
+     "glow": "bg/indie-rock-night-glow.jpg"
+    }
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Garage Days",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/garage-days-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/garage-days-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/garage-days-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/garage-days-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/garage-days-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/garage-days-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/garage-days-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/garage-days-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/garage-days-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/garage-days-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "tambourine": {
+      "sheet": "char/garage-days-tambourine.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "daydream": {
+      "sheet": "char/garage-days-daydream.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/garage-days-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/garage-days-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/garage-days-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/garage-days-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "daydream",
+     "sad": "sad",
+     "vocals": "sing",
+     "rise": "tambourine"
+    },
+    "rareOutfits": [
+     {
+      "id": "overalls",
+      "name": "Overalls",
+      "chance": 0.05,
+      "unlock": {
+       "plays": 25
+      },
+      "thumb": "char/garage-days-rare-thumb.jpg",
+      "idle": "char/garage-days-rare-idle.webp",
+      "dance": {
+       "slow": {
+        "sheet": "char/garage-days-rare-slow.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 80
+       },
+       "mid": {
+        "sheet": "char/garage-days-rare-mid.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 112
+       },
+       "fast": {
+        "sheet": "char/garage-days-rare-fast.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 150
+       }
+      },
+      "emotes": {
+       "happy": {
+        "sheet": "char/garage-days-rare-happy.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "headbang": {
+        "sheet": "char/garage-days-rare-headbang.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "shocked": {
+        "sheet": "char/garage-days-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "yawn": {
+        "sheet": "char/garage-days-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sad": {
+        "sheet": "char/garage-days-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sing": {
+        "sheet": "char/garage-days-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "tambourine": {
+        "sheet": "char/garage-days-rare-tambourine.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "daydream": {
+        "sheet": "char/garage-days-rare-daydream.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "surprised": {
+        "sheet": "char/garage-days-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sleepy": {
+        "sheet": "char/garage-days-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "crying": {
+        "sheet": "char/garage-days-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "music": {
+        "sheet": "char/garage-days-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       }
+      },
+      "events": {
+       "start": "happy",
+       "drop": "headbang",
+       "hit": "shocked",
+       "quiet": "daydream",
+       "sad": "sad",
+       "vocals": "sing",
+       "rise": "tambourine"
+      }
+     }
+    ]
+   },
+   "particles": [
+    "dust"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.25,
+    "shake": 0.6,
+    "flash": 1.0,
+    "particles": 0.8,
+    "glowColor": "#ffb44a",
+    "beatBurst": "sparkles"
+   },
+   "themeDefault": "aero",
+   "colors": {
+    "base": "aero",
+    "accent": "#e08a2e",
+    "accent2": "#3d6fa8",
+    "glow": "#ffb44a",
+    "lcd": "#ffd79a",
+    "text": "#3a2416",
+    "bg": [
+     "#fff0d8",
+     "#e8b778",
+     "#9a5a2a"
+    ],
+    "frame": [
+     "#f3e3cf",
+     "#c9a27c",
+     "#7a5236"
+    ]
+   },
+   "match": {
+    "genres": [
+     "indie",
+     "indie rock",
+     "indie pop",
+     "bedroom pop",
+     "dream pop",
+     "shoegaze",
+     "jangle pop",
+     "indie alternative",
+     "lo-fi indie",
+     "math rock",
+     "surf rock",
+     "britpop"
+    ],
+    "moods": [
+     "groove",
+     "chill"
+    ],
+    "bpm": [
+     96,
+     140
+    ],
+    "energy": [
+     0.3,
+     0.72
+    ],
+    "priority": 5,
+    "skins": [
+     "aero",
+     "classic"
+    ]
+   }
+  },
+  {
+   "id": "acoustic",
+   "name": "Acoustic Campfire",
+   "thumb": "bg/acoustic-thumb.jpg",
+   "background": {
+    "image": "bg/acoustic-night.jpg",
+    "video": "bg/acoustic-night.mp4",
+    "glow": "bg/acoustic-night-glow.jpg",
+    "loopBpm": 120,
+    "tempoSync": true
+   },
+   "variants": {
+    "day": {
+     "image": "bg/acoustic-day.jpg",
+     "video": "bg/acoustic-day.mp4",
+     "glow": "bg/acoustic-day-glow.jpg"
+    },
+    "night": {
+     "image": "bg/acoustic-night.jpg",
+     "video": "bg/acoustic-night.mp4",
+     "glow": "bg/acoustic-night-glow.jpg"
+    }
+   },
+   "character": {
+    "use": "custom",
+    "name": "Lucielle \u00b7 Campfire Wings",
+    "tier": "auto",
+    "dance": {
+     "slow": {
+      "sheet": "char/campfire-wings-slow.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 80
+     },
+     "mid": {
+      "sheet": "char/campfire-wings-mid.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 112
+     },
+     "fast": {
+      "sheet": "char/campfire-wings-fast.webp",
+      "frames": 48,
+      "columns": 8,
+      "beats": 8,
+      "loopBpm": 150
+     }
+    },
+    "idle": "char/campfire-wings-idle.webp",
+    "emotes": {
+     "happy": {
+      "sheet": "char/campfire-wings-happy.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "headbang": {
+      "sheet": "char/campfire-wings-headbang.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "shocked": {
+      "sheet": "char/campfire-wings-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "yawn": {
+      "sheet": "char/campfire-wings-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sad": {
+      "sheet": "char/campfire-wings-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sing": {
+      "sheet": "char/campfire-wings-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "hug-knees": {
+      "sheet": "char/campfire-wings-hug-knees.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "fireflies": {
+      "sheet": "char/campfire-wings-fireflies.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "surprised": {
+      "sheet": "char/campfire-wings-shocked.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "sleepy": {
+      "sheet": "char/campfire-wings-yawn.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "crying": {
+      "sheet": "char/campfire-wings-sad.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     },
+     "music": {
+      "sheet": "char/campfire-wings-sing.webp",
+      "frames": 24,
+      "columns": 8,
+      "beats": 4,
+      "loopBpm": 120
+     }
+    },
+    "events": {
+     "start": "happy",
+     "drop": "headbang",
+     "hit": "shocked",
+     "quiet": "yawn",
+     "sad": "hug-knees",
+     "vocals": "sing",
+     "rise": "fireflies"
+    },
+    "rareOutfits": [
+     {
+      "id": "raincoat",
+      "name": "Raincoat",
+      "chance": 0.05,
+      "unlock": {
+       "plays": 25
+      },
+      "thumb": "char/campfire-wings-rare-thumb.jpg",
+      "idle": "char/campfire-wings-rare-idle.webp",
+      "dance": {
+       "slow": {
+        "sheet": "char/campfire-wings-rare-slow.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 80
+       },
+       "mid": {
+        "sheet": "char/campfire-wings-rare-mid.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 112
+       },
+       "fast": {
+        "sheet": "char/campfire-wings-rare-fast.webp",
+        "frames": 48,
+        "columns": 8,
+        "beats": 8,
+        "loopBpm": 150
+       }
+      },
+      "emotes": {
+       "happy": {
+        "sheet": "char/campfire-wings-rare-happy.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "headbang": {
+        "sheet": "char/campfire-wings-rare-headbang.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "shocked": {
+        "sheet": "char/campfire-wings-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "yawn": {
+        "sheet": "char/campfire-wings-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sad": {
+        "sheet": "char/campfire-wings-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sing": {
+        "sheet": "char/campfire-wings-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "hug-knees": {
+        "sheet": "char/campfire-wings-rare-hug-knees.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "fireflies": {
+        "sheet": "char/campfire-wings-rare-fireflies.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "surprised": {
+        "sheet": "char/campfire-wings-rare-shocked.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "sleepy": {
+        "sheet": "char/campfire-wings-rare-yawn.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "crying": {
+        "sheet": "char/campfire-wings-rare-sad.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       },
+       "music": {
+        "sheet": "char/campfire-wings-rare-sing.webp",
+        "frames": 24,
+        "columns": 8,
+        "beats": 4,
+        "loopBpm": 120
+       }
+      },
+      "events": {
+       "start": "happy",
+       "drop": "headbang",
+       "hit": "shocked",
+       "quiet": "yawn",
+       "sad": "hug-knees",
+       "vocals": "sing",
+       "rise": "fireflies"
+      }
+     }
+    ]
+   },
+   "particles": [
+    "embers",
+    "dust"
+   ],
+   "reactivity": {
+    "beatZoom": 1.1,
+    "bassGlow": 1.25,
+    "shake": 0.6,
+    "flash": 1.0,
+    "particles": 0.8,
+    "glowColor": "#ffa040",
+    "beatBurst": "sparks"
+   },
+   "themeDefault": "aero",
+   "colors": {
+    "base": "aero",
+    "accent": "#e0782e",
+    "accent2": "#9bd36a",
+    "glow": "#ffa040",
+    "lcd": "#ffd08a",
+    "bg": [
+     "#1d2b4a",
+     "#101a30",
+     "#050910"
+    ],
+    "frame": [
+     "#d8e0c8",
+     "#9aa880",
+     "#566048"
+    ]
+   },
+   "match": {
+    "genres": [
+     "acoustic",
+     "folk",
+     "indie folk",
+     "folk pop",
+     "singer-songwriter",
+     "americana",
+     "country",
+     "bluegrass",
+     "unplugged",
+     "campfire",
+     "folk rock",
+     "chamber folk",
+     "stomp and holler"
+    ],
+    "moods": [
+     "chill",
+     "sad"
+    ],
+    "bpm": [
+     56,
+     118
+    ],
+    "energy": [
+     0.0,
+     0.42
+    ],
+    "priority": 5,
+    "skins": [
+     "aero",
+     "classic"
+    ]
+   }
+  }
+ ]
+}

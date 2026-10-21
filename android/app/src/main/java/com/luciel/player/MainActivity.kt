@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
         val id = pickId; val audioOnly = treeAudioOnly
         Thread { val r = try { LibraryScanner.walkTree(this, tree, audioOnly).toString() } catch (e: Throwable) { "[]" }; bridge.resolve(id, true, r) }.start()
     }
+    private val locLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) sendLocation() else replyLocation(null, "denied") }
     private val permLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         bridge.resolve(permId, true, granted.toString()); pushPerms()
     }
@@ -223,7 +224,7 @@ class MainActivity : ComponentActivity() {
             ACTION_EXT_MODE -> { js("window.LucielAndroidBridge&&LucielAndroidBridge.extMode(true)"); i.action = null; return }
         }
         if (uris.isEmpty()) return
-        val zips = uris.filter { u -> (contentResolver.getType(u) ?: "").contains("zip") || displayName(u).endsWith(".zip", true) }
+        val zips = uris.filter { u -> WeatherPlace.isPackZip(contentResolver.getType(u), displayName(u)) }
         val audio = uris - zips.toSet()
         if (audio.isNotEmpty()) js("window.LucielAndroidBridge&&LucielAndroidBridge.openUris(" + LibraryScanner.describe(this, audio) + ")")
         if (zips.isNotEmpty()) js("window.LucielAndroidBridge&&LucielAndroidBridge.importPacks(" + LibraryScanner.describe(this, zips) + ")")
@@ -239,6 +240,29 @@ class MainActivity : ComponentActivity() {
         permId = id
         val p = if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
         if (checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED) bridge.resolve(id, true, "true") else permLauncher.launch(p)
+    }
+
+    // ---------------------------------------------------------------- weather layer: approximate location (opt-in)
+    fun coarseLocation() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) sendLocation()
+        else try { locLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) } catch (e: Throwable) { replyLocation(null, "no permission prompt") }
+    }
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun sendLocation() {
+        try {
+            val lm = getSystemService(android.location.LocationManager::class.java) ?: return replyLocation(null, "no location service")
+            val provs = listOf(android.location.LocationManager.NETWORK_PROVIDER, android.location.LocationManager.PASSIVE_PROVIDER, android.location.LocationManager.GPS_PROVIDER)
+            val last = provs.mapNotNull { p -> try { lm.getLastKnownLocation(p) } catch (_: Throwable) { null } }.maxByOrNull { it.time }
+            if (last != null) return replyLocation(last, null)
+            if (Build.VERSION.SDK_INT >= 30 && lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER))
+                lm.getCurrentLocation(android.location.LocationManager.NETWORK_PROVIDER, null, mainExecutor) { l -> replyLocation(l, if (l == null) "no fix" else null) }
+            else replyLocation(null, "no fix")
+        } catch (e: Throwable) { replyLocation(null, e.message ?: "location failed") }
+    }
+    /** only a coarse position (≈ 10 km, WeatherPlace.round) goes to the page */
+    private fun replyLocation(l: android.location.Location?, err: String?) {
+        val j = if (l != null) WeatherPlace.json(l.latitude, l.longitude) else JSONObject().put("ok", false).put("error", err ?: "no location").toString()
+        js("window.__lucielLoc&&__lucielLoc(" + JSONObject.quote(j) + ")")
     }
 
     // ---------------------------------------------------------------- tag editor: write back to the file

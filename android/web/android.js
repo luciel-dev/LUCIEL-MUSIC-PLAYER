@@ -185,7 +185,7 @@
     }
   }
   const schedVisual = (why) => { clearTimeout(VIS.timer); VIS.timer = setTimeout(() => publishVisual(why), 80); };
-  if (A.luciel) ['setTheme', 'setManual', 'trackStarted', 'moodCheck', 'scenesChanged', 'setOptions'].forEach((m) => {
+  if (A.luciel) ['setTheme', 'setManual', 'trackStarted', 'moodCheck', 'scenesChanged', 'setOptions', 'genreHint', 'setOutfit', 'setDayMode', 'clockTick'].forEach((m) => {
     const f = A.luciel[m]; if (typeof f !== 'function') return;
     A.luciel[m] = function () { const r = f.apply(this, arguments); schedVisual(m); return r; };
   });
@@ -361,6 +361,12 @@
   }
 
   let bgSceneKey = '', extScened = false;
+  /** genre packs: when Spotify is connected and the song has no genre word, the artist's Spotify genres pick the scene */
+  function spotifyGenres(st) {
+    const SP = window.LucielSpotify; if (!st || !st.title || st.genre || !SP || !SP.genresFor || !A.luciel.genreHint) return;
+    const title = st.title;
+    SP.genresFor(st.artist).then((g) => { if (g && g.length && A.luciel.genreHint(title, g) && window.LucielDebug) window.LucielDebug.add('genres', `Spotify artist genres → scene: ${g.slice(0, 3).join(', ')}`); }).catch(() => {});
+  }
   function onExt(st, force) {
     EXT.state = st;
     if (!EXT.on) {
@@ -371,7 +377,7 @@
       // card – still follows the song's scene, exactly like the Spotify tab would, unless the user picked a scene
       else if (st && st.active && st.playing && audio.paused && (A.settings.scene || 'auto') === 'auto' && st.key !== bgSceneKey) {
         bgSceneKey = st.key; extScened = true;
-        A.luciel.trackStarted({ genre: st.genre || '' }, st.title);
+        A.luciel.trackStarted({ genre: st.genre || '' }, st.title); spotifyGenres(st);
         A.luciel.setManual(st.scene || 'auto');
       }
       renderChip(); return;
@@ -381,7 +387,7 @@
     if (st.key !== lastKey || force) {
       lastKey = st.key;
       // Lucielle reacts to the new song + picks a scene: user's manual scene wins, else the genre word / cover guess
-      A.luciel.trackStarted({ genre: st.genre || '' }, st.title);
+      A.luciel.trackStarted({ genre: st.genre || '' }, st.title); spotifyGenres(st);
       if ((savedScene || 'auto') === 'auto') A.luciel.setManual(st.scene || 'auto');
     }
     applyTint(st); renderPanel();

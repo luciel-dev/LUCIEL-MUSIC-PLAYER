@@ -148,6 +148,52 @@ over; listeners can turn them off under Settings → *Scene colours*.
 `pixel-sort` (sorted streaks on beats), `rgb-split` (chromatic split that kicks on beats), `scanlines` (CRT lines).
 The first of `cyber` / `datamosh` / `dither` sets the scene style; the rest are layered on top.
 
+## Genre packs: day / night, instruments, rare outfits, priority
+
+Optional fields (Luciel 1.2+; older versions ignore them, so the pack still loads there with its main background and
+outfit). The app features stay in the app and switch on only when a pack provides the data. Example: *Lucielle Genres*
+(`tools/make_genres_pack.py`, a separate download, not bundled with the app).
+
+```jsonc
+{
+  "id": "alt-rock", "name": "Alt Rock Stage",
+  "background": { "image": "bg/alt-rock-night.jpg", "video": "bg/alt-rock-night.mp4", "glow": "bg/alt-rock-night-glow.jpg" },
+  "variants": {                                   // shown by local time: Settings › Day / night (Auto 07:00–19:00 = day, Day, Night)
+    "day":   { "image": "bg/alt-rock-day.jpg",   "video": "bg/alt-rock-day.mp4",   "glow": "bg/alt-rock-day-glow.jpg" },
+    "night": { "image": "bg/alt-rock-night.jpg", "video": "bg/alt-rock-night.mp4", "glow": "bg/alt-rock-night-glow.jpg" }
+  },                                              // each: image (required), video, glow, pixel, pixelVideo
+  "character": {
+    "use": "custom", "dance": { … }, "idle": "…", "emotes": { …, "inst-guitar": { "sheet": "…", "frames": 24, "columns": 8, "beats": 4 } },
+    "instruments": {                              // Alt Rock poses: while she dances, the loop follows the leading band
+      "bass": "inst-bass",                        //   low end (20–150 Hz) standing out
+      "drums": "inst-drums",                      //   kick / transients (low-end onsets)
+      "vocals": "inst-mic",                       //   the voice band (300 Hz–3.4 kHz)
+      "guitar": "inst-guitar"                     //   guitar-heavy mids (150–300 Hz + 3.4–6 kHz) or chorus energy
+    },                                            // values are emote names of this character; hysteresis: ≥ 2.5 s per pick
+    "rareOutfits": [{                             // up to 8 per scene, each a full character (dance / idle / emotes / events / instruments)
+      "id": "leather-jacket", "name": "Leather Jacket",
+      "chance": 0.05,                             // per song showing this scene (0.05 = 1 in 20, the default)
+      "unlock": { "plays": 25 },                  // counted plays of this scene that unlock it for good
+      "thumb": "char/static-halo-rare-thumb.jpg", // collection picture
+      "dance": { … }, "idle": "…", "emotes": { … }, "events": { … }
+    }]
+  },
+  "match": { "genres": ["alternative", "punk", "grunge"], "moods": ["hype"], "bpm": [112, 200], "energy": [0.55, 1], "priority": 5 }
+}
+```
+
+* **Auto-switch by genre** (Settings › *Auto-switch by genre*, on by default) uses `match.genres` for the song’s genre
+  tag, then (when Spotify is connected on Android) the artist’s Spotify genres, then `match.bpm` / `energy` / `moods`
+  from the song’s sound. It switches only at track boundaries; the sound-based pick for a song heard for the first time
+  is made once in its first seconds and kept to the end. A scene picked by hand wins until *Auto* is chosen again.
+  `match.priority` (0–9) breaks ties between equally good matches, so a genre pack wins over a general one.
+* **Day / night**: without `variants` the scene looks the same all day.
+* **Rare outfits**: the first sighting shows a sparkle and a *rare!* note; found and unlocked outfits are listed under
+  Settings › *Rare outfits* and can be worn with any scene (*Outfit*).
+* **Outfit** (Settings): mix any scene with any outfit from the installed packs (or classic Lucielle); *Scene’s own* is the default.
+* **Weather layer** (Settings, off by default) is app-side, not pack data: rain / snow / fog / storm over any scene from
+  Open-Meteo (no account; a typed city or approximate location; refreshed every 30 minutes; no layer when offline).
+
 ## Validation
 
 Problems are listed in the Packs manager in plain words, for example
@@ -163,6 +209,8 @@ from the pack folder with fixed content types.
 
 ## Building a pack
 
+`tools/make_genres_pack.py` builds *Lucielle Genres* (5 genre stages with day / night loops, Alt Rock instruments,
+rare outfits; poses split from 3-pose sheets by `tools/split_pose_sheets.py`).
 `tools/make_styles_pack.py` builds *Lucielle Styles* (outfit stills on green → keyed, code-animated dance / emote
 sheets; plates → seamless light / steam / leaf loops, light maps and pixel versions).
 `tools/make_example_pack.py` builds the example from existing Lucielle art (Pillow + ffmpeg) and zips it with

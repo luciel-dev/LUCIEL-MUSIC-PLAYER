@@ -769,6 +769,24 @@
   const VIZ = [['spectrum', 'Spectrum'], ['scope', 'Scope'], ['both', 'Both'], ['off', 'Off']];
   const tog = (id, label, on, hint) => `<label class="m-toggle"><span><b>${label}</b>${hint ? `<em>${hint}</em>` : ''}</span><input type="checkbox" data-opt="${id}" ${on ? 'checked' : ''}><i></i></label>`;
   const sel = (id, label, cur, opts) => `<label class="m-toggle"><span><b>${label}</b></span><select data-sel="${id}">${opts.map(([k, l]) => `<option value="${k}" ${cur === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+  /** genre-pack settings: auto-switch, day / night, outfit mix, rare-outfit collection, weather layer */
+  function genreRows() {
+    const L = A.luciel, outs = (L.outfits || []).filter((o) => o.available), col = L.rareCollection || [];
+    const got = col.filter((r) => r.unlocked).length;
+    return `<div class="m-sec">Genres &amp; outfits</div><div class="m-group m-pad">
+        ${tog('optGenreAuto', 'Auto-switch by genre', S.genreAuto !== false, 'Each new song picks its scene (genre tag, Spotify artist, the sound). A scene you pick wins until you choose Auto')}
+        ${sel('optDayNight', 'Day / night', S.dayMode || 'auto', [['auto', 'Auto (clock)'], ['day', 'Day'], ['night', 'Night']])}
+        ${sel('optOutfit', 'Outfit', outs.some((o) => o.key === S.outfit) ? S.outfit : '', [['', 'Scene’s own'], ...outs.map((o) => [o.key, o.name + (o.rare ? ' ✦' : '')])])}</div>
+      ${col.length ? `<div class="m-group">${navRow('__rare', G_('✦'), 'Rare outfits', `${got}/${col.length}`, 'found or unlocked by plays')}</div>` : ''}
+      <div class="m-sec">Weather</div><div class="m-group m-pad">
+        ${tog('optWeather', 'Weather layer', !!S.weatherOn, 'Rain, snow, fog or storm over the scene (Open-Meteo, no account). Off by default')}
+        <label class="m-toggle"><span><b>City</b><em>${esc((A.weather && A.weather.state.place) || 'Type a city, or use your location')}</em></span><input type="text" data-sel="optWeatherCity" value="${esc(S.weatherCity || '')}" placeholder="City" maxlength="80" spellcheck="false" autocomplete="off" enterkeyhint="done" style="max-width:9.5em"></label>
+        ${tog('optWeatherLoc', 'Use my approximate location', !!S.weatherLoc, 'Coarse location only, asked once')}</div>`;
+  }
+  function openRareSheet() {
+    const b = openSheet(`<div class="m-sh-head"><b>Rare outfits</b><em>1 in 20 songs, or unlocked by plays</em></div><div class="rare-list">${A.rareCollectionHTML()}</div>`, { kind: 'rare', tall: true });
+    b.onclick = (e) => { const w = e.target.closest('[data-wear]'); if (!w) return; A.setOutfit(S.outfit === w.dataset.wear ? '' : w.dataset.wear); const l = b.querySelector('.rare-list'); if (l) l.innerHTML = A.rareCollectionHTML(); };
+  }
   function renderVisuals() {
     const el = $('mVisuals'); const y = el.scrollTop;
     el.innerHTML = `<header class="m-top"><h2>Visuals</h2></header>
@@ -777,6 +795,7 @@
       <div class="m-sec">Lucielle</div><div class="m-group m-pad">
         ${tog('optMascot', 'Show Lucielle', S.mascot)}${sel('optSize', 'Size', S.mascotSize, [['s', 'Small'], ['m', 'Medium'], ['l', 'Large']])}
         ${tog('optDoze', 'Doze when idle', S.doze)}${tog('optStrict', 'Strict genre scenes', S.strict, 'Auto only picks scenes that match the genre')}${tog('optDither', 'Dither FX', !!S.ditherFx, 'Ordered Bayer dither over the scene')}${tog('optSceneColors', 'Scene colours', S.sceneColors !== false, 'Pack scenes recolour the player')}${tog('optBubbles', 'Animated backdrop', S.bubbles)}</div>
+      ${genreRows()}
       <div class="m-sec">Visual packs</div><div class="m-group">${navRow('__packzip', IC.pack, 'Import a pack (.zip)…', null)}${navRow('__packs', G_('☰'), 'Manage packs', null)}</div>
       ${isAndroid() && window.LucielAndroidBridge ? `<div class="m-sec">Spotify &amp; other players</div><div class="m-group">${navRow('__ext', IC.spark, 'Spotify visuals', null, 'Lucielle dances to what another app plays')}</div>` : ''}
       <div class="m-foot-space"></div>`;
@@ -809,7 +828,7 @@
       const th = e.target.closest('[data-theme]'); if (th) { const [p, sk] = th.dataset.theme.split('|'); A.applyTheme(p, sk, true); renderSettings(); syncPlayer(true); return; }
       const go = e.target.closest('[data-go]'); if (!go) return;
       const id = go.dataset.go;
-      if (id === '__packzip') $('packZipInput').click(); else if (id === '__packs') A.packs.openManager();
+      if (id === '__packzip') $('packZipInput').click(); else if (id === '__packs') A.packs.openManager(); else if (id === '__rare') openRareSheet();
       else if (id === '__ext') window.LucielAndroidBridge.extMode(true); else if (id === '__eq') openEq();
       else if (id === '__debug') A.openDebugLog();
       else if (id === '__pop') popOut(); else if (id === '__phone') window.LucielAndroidUI.openSheet();

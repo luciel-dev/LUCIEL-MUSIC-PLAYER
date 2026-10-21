@@ -229,6 +229,7 @@
           // exact tag match beats a substring match; among substring matches the longest key wins
           sc = Math.max(sc, g === key ? 1000 : (hit || titleHit) ? key.length : 0);
         }
+        if (sc && s.priority) sc += s.priority / 10;      // pack tie-break (match.priority): a genre pack wins over a general one
         if (sc > bestLen) { best = [s]; bestLen = sc; } else if (sc && sc === bestLen) best.push(s);
       }
       // equally good matches (e.g. a pack scene for the same genre): pick one per track so both get seen
@@ -487,6 +488,8 @@
       scene: null, bpm: 0, beatPos: 0, energy: 0, energyAvg: 0, bass: 0, playing: false, hasTracks: false, flash: 0, shake: 0,
       tier: 'float', moodScene: null, genreScene: null, lastDrop: -1e9, shortE: 0, longE: 0,
       ditherFx: false, beatHit: false, lastBeat: -1, dropHit: false, pointerX: 0, pointerY: 0, t: 0,
+      // genre-pack features (js/genres.js): auto-switch, day/night variant, outfit mix, rare outfit of this track, weather layer, instrument
+      genreAuto: true, dayMode: 'auto', part: 'night', outfit: '', trackRare: null, weather: null, instrument: null, base: null, viewKey: '', rareFx: 0, genreHint: null,
     };
     const ch = new Character();
     const beh = new Behavior();
@@ -541,10 +544,52 @@
       if (st.moodScene) return st.moodScene;
       return Scenes.paletteDefault(st.palette, st.skin);
     }
+    // ---- genre-pack layer: day/night variant + outfit (mix / rare) applied on top of the chosen scene
+    const G = global.LucielGenres;
+    const rare = G ? G.createRareStore(opts.storage === undefined ? (() => { try { return global.localStorage; } catch (e) { return null; } })() : opts.storage) : null;
+    let rng = Math.random;
+    const picker = G ? G.createInstrumentPicker() : null;
+    /** audio features of songs heard before (title -> bpm / energy), so the audio fallback can pick at the track start */
+    const featMem = (() => {
+      const K = 'luciel.songFeatures'; let m = {}; const ls = (() => { try { return opts.storage === undefined ? global.localStorage : opts.storage; } catch (e) { return null; } })();
+      try { m = JSON.parse((ls && ls.getItem(K)) || '{}') || {}; } catch (e) { m = {}; }
+      return { get: (t) => (t && m[t]) || null, set(t, v) { m[t] = v; const ks = Object.keys(m); if (ks.length > 400) delete m[ks[0]]; try { ls && ls.setItem(K, JSON.stringify(m)); } catch (e) {} } };
+    })();
+    const views = new Map();
+    /** every outfit Lucielle can wear: each pack scene's own character + rare outfits found / unlocked */
+    function outfitList() {
+      const out = [{ key: 'lucielle', name: 'Classic Lucielle', char: { use: 'lucielle', dance: {}, emotes: {} } }];
+      for (const s of Scenes.list) {
+        const C = s.char; if (!C || C.use !== 'custom') continue;
+        // a pack's Pixel twin scene shares the outfit: list each outfit once
+        if (out.some((o) => o.char === C || (o.name === (C.name || s.name) && o.char.idle === C.idle))) continue;
+        out.push({ key: s.id, name: C.name || s.name, scene: s.id, sceneName: s.name, thumb: s.thumb, char: C });
+        if (G) for (const r of G.rareList(s)) out.push({ key: r.key, name: r.name, scene: s.id, sceneName: s.name, thumb: r.thumb || r.idle, char: r, rare: true, available: rare.isUnlocked(r.key) });
+      }
+      return out;
+    }
+    function outfitChar(base) {
+      if (st.outfit) { const o = outfitList().find((x) => x.key === st.outfit && x.available !== false); if (o) return { char: o.char, key: o.key }; }
+      if (st.trackRare && base && st.trackRare.scene === base.id) return { char: st.trackRare, key: st.trackRare.key };
+      return null;
+    }
+    function view(base) {
+      if (!base) return base;
+      const v = G && base.variants ? G.variantOf(base, st.part) : null, oc = outfitChar(base);
+      if (!v && !oc) return base;
+      const key = `${base.id}|${v ? st.part : ''}|${oc ? oc.key : ''}`;
+      if (views.has(key)) return views.get(key);
+      const o = Object.assign({}, base, { baseId: base.id });
+      if (v) { o.id = `${base.id}~${st.part}`; o.part = st.part; o.image = v.image; o.px = v.px || v.image; if (v.video) o.video = v.video; if (v.glow) o.glow = v.glow; if (v.pixelVideo && o.pixelVideo) o.video = v.pixelVideo; }
+      if (oc) { o.char = oc.char.use === 'lucielle' ? null : Object.assign({}, oc.char, { use: 'custom' }); o.outfit = oc.key; if (oc.char.use === 'lucielle') o.char = { use: 'lucielle', dance: {}, emotes: {}, scale: 1 }; }
+      views.set(key, o); if (views.size > 60) views.delete(views.keys().next().value);
+      return o;
+    }
     function applyScene(force) {
-      const s = sceneFor(); if (!s) return;
+      const b = sceneFor(); if (!b) return;
+      const s = view(b);
       if (s === st.scene && !force) return;
-      st.scene = s;
+      st.base = b; st.scene = s;
       const pixel = st.skin === 'classic';
       const usePx = pixel ? (s.kind === 'pixel' ? s.px : s.px) : s.image;
       if (el.backArt) { el.backArt.style.backgroundImage = `url("${usePx}")`; el.backArt.dataset.kind = s.kind; }
@@ -601,6 +646,11 @@
       if (!C || C.use === 'none') return base;
       const tier = (n) => n || (!st.bpm ? 'mid' : st.bpm < 96 ? 'slow' : st.bpm <= 126 ? 'mid' : 'fast');
       const pd = (t) => { const d = ch.customDance(s, t); return d && { kind: 'pdance', name: d.name, ref: d, scale: C.scale }; };
+      // Alt Rock style instruments: while she is dancing, the loop follows the leading band (bass / drums / vocals / guitar)
+      if (C.instruments && st.playing && st.instrument && (base.kind === 'dance' || (base.kind === 'pose' && base.name === 'music'))) {
+        const n = C.instruments[st.instrument], e = n && C.emotes && C.emotes[n];
+        if (e && typeof e === 'object') { const d = ch.customLoop(s, n, e); return { kind: 'pdance', name: d.name, ref: d, scale: C.scale }; }
+      }
       if (base.kind === 'pose' && C.emotes && C.emotes[base.name]) {
         const e = C.emotes[base.name];
         if (typeof e === 'string') return { kind: 'pimg', name: e, scale: C.scale };
@@ -780,9 +830,64 @@
       if (s.style === 'cyber' && !pixel) {     // HUD scanlines over the whole stage
         g.globalAlpha = 0.12; g.fillStyle = '#000'; for (let y = 0; y < H; y += 3) g.fillRect(0, y, W, 1); g.globalAlpha = 1;
       }
+      if (st.weather) drawWeather(g, W, H, dt, pixel);
+      if (st.rareFx > 0 && !pixel) drawRareFx(g, W, H);
       g.restore();
       if (s.fx && s.fx.length && FX) packFx(cv, g, W, H, pixel, s.fx, m);
       if (st.ditherFx && s.style !== 'dither') postDither(cv, g, W, H, pixel, pixel ? 'px' : 'aero');
+    }
+    /** weather layer (Settings › Weather, Open-Meteo): rain / snow / fog / storm over the stage; nothing when clear */
+    const wx = { drops: [], flakes: [], flash: 0, nextBolt: 0, W: 0, H: 0 };
+    function drawWeather(g, W, H, dt, pixel) {
+      const k = st.weather, sc = pixel ? 0.35 : Math.max(1, Math.min(W, H) / 330);
+      if (wx.W !== W || wx.H !== H) { wx.drops = []; wx.flakes = []; wx.W = W; wx.H = H; }
+      g.save();
+      if (k === 'rain' || k === 'storm') {
+        const n = Math.round((k === 'storm' ? 140 : 80) * Math.min(2, W * H / 300000 + 0.4));
+        while (wx.drops.length < n) wx.drops.push({ x: rnd(-W * 0.2, W), y: rnd(-H, H), v: rnd(0.9, 1.4), l: rnd(14, 30) });
+        g.strokeStyle = pixel ? 'rgba(200,215,255,.7)' : 'rgba(210,222,255,.58)'; g.lineWidth = Math.max(1.2, sc * 1.1); g.beginPath();
+        const vx = (k === 'storm' ? 0.28 : 0.14) * H, vy = 1.15 * H;
+        for (const d of wx.drops) {
+          d.x += vx * d.v * dt; d.y += vy * d.v * dt;
+          if (d.y > H + 20) { d.y = rnd(-40, -5); d.x = rnd(-W * 0.2, W); }
+          g.moveTo(d.x, d.y); g.lineTo(d.x - vx / vy * d.l * sc, d.y - d.l * sc);
+        }
+        g.stroke();
+        g.fillStyle = k === 'storm' ? 'rgba(14,20,40,.22)' : 'rgba(20,30,55,.14)'; g.fillRect(0, 0, W, H);
+        if (k === 'storm') {
+          if (st.t > wx.nextBolt) { wx.flash = 1; wx.nextBolt = st.t + rnd(6, 14); }
+          if (wx.flash > 0) { g.fillStyle = `rgba(235,240,255,${(0.55 * wx.flash * (Math.random() < 0.8 ? 1 : 0.3)).toFixed(3)})`; g.fillRect(0, 0, W, H); wx.flash = Math.max(0, wx.flash - dt * 3.5); }
+        }
+      } else if (k === 'snow') {
+        const n = Math.round(70 * Math.min(2, W * H / 300000 + 0.4));
+        while (wx.flakes.length < n) wx.flakes.push({ x: rnd(0, W), y: rnd(-H, H), r: rnd(1.6, 4), v: rnd(0.5, 1.2), ph: rnd(0, TAU) });
+        g.fillStyle = 'rgba(255,255,255,.92)'; if (!pixel) { g.shadowColor = 'rgba(255,255,255,.8)'; g.shadowBlur = 4 * sc; }
+        for (const f of wx.flakes) {
+          f.y += 0.09 * H * f.v * dt; f.x += Math.sin(st.t * 0.9 + f.ph) * 0.02 * W * dt;
+          if (f.y > H + 6) { f.y = -6; f.x = rnd(0, W); }
+          if (pixel) g.fillRect(Math.round(f.x), Math.round(f.y), 1, 1); else { g.beginPath(); g.arc(f.x, f.y, f.r * sc, 0, TAU); g.fill(); }
+        }
+        g.shadowBlur = 0; g.fillStyle = 'rgba(220,230,255,.10)'; g.fillRect(0, 0, W, H);
+      } else if (k === 'fog') {
+        for (let i = 0; i < 4; i++) {
+          const y = H * (0.45 + i * 0.15), x = ((st.t * (8 + i * 6) * sc) % (W * 1.6)) - W * 0.3;
+          const gr = g.createRadialGradient(x, y, 0, x, y, W * 0.55); gr.addColorStop(0, 'rgba(225,230,240,.28)'); gr.addColorStop(1, 'rgba(225,230,240,0)');
+          g.fillStyle = gr; g.fillRect(0, 0, W, H);
+        }
+        const lg = g.createLinearGradient(0, H * 0.35, 0, H); lg.addColorStop(0, 'rgba(220,225,235,0)'); lg.addColorStop(1, 'rgba(220,225,235,.32)');
+        g.fillStyle = lg; g.fillRect(0, 0, W, H);
+      }
+      g.restore();
+    }
+    /** "rare!" sparkle: a ring of four-point stars around Lucielle the first time a rare outfit shows */
+    function drawRareFx(g, W, H) {
+      const k = clamp(st.rareFx / 2.6, 0, 1), cx = W / 2, cy = H * 0.55, R = Math.min(W, H) * (0.28 + (1 - k) * 0.12);
+      g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = Math.min(1, k * 1.6);
+      for (let i = 0; i < 12; i++) {
+        const a = i / 12 * TAU + st.t * 1.4, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R * 0.8, s = Math.min(W, H) * (0.018 + 0.012 * Math.sin(st.t * 9 + i));
+        g.fillStyle = i % 2 ? '#fff3a8' : '#ffb3f0'; g.shadowColor = g.fillStyle; g.shadowBlur = 12; star4(g, x, y, s);
+      }
+      g.restore();
     }
     /** pack effect presets over the finished stage: rgb-split, scanlines, dither, pixel-sort, datamosh (beat / drop driven) */
     const pfx = { sortUntil: 0, moshUntil: 0, seed: 0 };
@@ -920,6 +1025,11 @@
       st.t += dt; st.pointerX = info.pointerX || 0; st.pointerY = info.pointerY || 0;
       const bi = Math.floor(st.beatPos || 0); st.beatHit = st.playing && st.bpm > 0 && bi !== st.lastBeat; st.lastBeat = bi;
       detectEvents(info, now, dt);
+      if (picker && st.scene && st.scene.char && st.scene.char.instruments) {
+        if (st.instrForce) st.instrument = st.instrForce;
+        else if (st.playing) st.instrument = picker.update({ bass: info.bass || 0, vocal: info.vocal || 0, guitar: info.guitar, mid: info.mid, kick: info.kick, energy: info.energy || 0, beat: st.beatHit }, dt);
+      }
+      st.rareFx = Math.max(0, st.rareFx - dt);
       // pack scenes can burst particles on strong beats (leaves gust, neon score bursts...)
       if (st.beatHit && st.scene && st.scene.react && st.scene.react.beatBurst && st.bass > 0.28) {
         const P = st.skin === 'classic' ? stagePix : stagePx, type = st.scene.react.beatBurst;
@@ -966,6 +1076,7 @@
       setTheme(palette, skin) { st.palette = palette; st.skin = skin; ctx.palette = palette; ctx.skin = skin; readColors(); applyScene(true); },
       /** scene list changed (packs installed / toggled): drop a manual pick that no longer exists, re-resolve auto */
       scenesChanged() {
+        views.clear();
         if (st.manual !== 'auto' && !Scenes.byId(st.manual)) st.manual = 'auto';
         if (st.genreScene && !Scenes.byId(st.genreScene.id)) st.genreScene = null;
         if (st.moodScene && !Scenes.byId(st.moodScene.id)) st.moodScene = null;
@@ -976,9 +1087,26 @@
       setManual(id) { st.manual = id || 'auto'; applyScene(); },
       /** call on track start */
       trackStarted(meta, title) {
-        st.track = { genre: meta && meta.genre, title };
-        st.genreScene = Scenes.matchGenre(meta && meta.genre, title, st.skin === 'classic' ? ['layered', 'full', 'video', 'pixel'] : ['layered', 'full', 'video']) || null;
-        st.moodScene = null; applyScene();
+        const hint = st.genreHint && st.genreHint.title === title ? st.genreHint.genres : null;
+        st.track = { genre: meta && meta.genre, title, at: performance.now(), decided: false };
+        if (G) st.part = G.dayPart(st.dayMode, new Date());
+        // auto-switch by genre (switches only here, at the track boundary): tag genre, then Spotify artist genres, then
+        // remembered audio features of this song; with the toggle off the scene stays as it is
+        if (st.genreAuto) {
+          const gtxt = G ? G.genreText(meta && meta.genre, hint) : meta && meta.genre;
+          st.genreScene = Scenes.matchGenre(gtxt, title, st.skin === 'classic' ? ['layered', 'full', 'video', 'pixel'] : ['layered', 'full', 'video']) || null;
+          st.moodScene = null;
+          if (st.genreScene) st.track.decided = true;
+          else { const f = featMem.get(title); if (f) { st.moodScene = Scenes.matchMood(f.bpm, f.energy, title) || null; st.track.decided = true; } }
+        }
+        // rare outfit roll for this track (the pack's chance, default 1 in 20)
+        st.trackRare = null; if (picker) picker.reset(); st.instrument = null;
+        const nb = sceneFor();
+        if (G && nb && !st.outfit) {
+          const r = G.rollRare(nb, rng);
+          if (r) { st.trackRare = r; const first = rare.sighted(r); st.rareSeen = { key: r.key, first }; if (first) { st.rareFx = 2.6; stagePx.burst('sparkles', 24, null, null); } if (el.onRare) el.onRare(r, first); }
+        }
+        applyScene();
         const ge = beh.genreEmote(meta && meta.genre, title), map = evMap();
         ev.log.push({ evt: 'start', t: Math.round(performance.now()), at: 0 }); st.lastEvent = 'start'; ev.quietFor = 0; ev.voxFor = 0;
         ev.lastSad = performance.now() - (ge === 'crying' && map && map.sad ? 20000 : 0);
@@ -987,10 +1115,43 @@
       },
       /** re-evaluate mood scene a few seconds into the track */
       moodCheck() {
-        if (st.genreScene) return;
-        const s = Scenes.matchMood(st.bpm, st.energyAvg, st.track && st.track.title);
+        const title = st.track && st.track.title;
+        if (title && st.bpm) featMem.set(title, { bpm: st.bpm, energy: +st.energyAvg.toFixed(3) });
+        if (!st.genreAuto || st.genreScene || (st.track && st.track.decided)) return;
+        // first listen of an untagged song: the audio-feature pick is made once, in the intro, then held to the end
+        if (st.track) st.track.decided = true;
+        const s = Scenes.matchMood(st.bpm, st.energyAvg, title);
         if (s !== st.moodScene) { st.moodScene = s; applyScene(); }
       },
+      /** Spotify artist genres for the current song (arrive a moment after the track starts): re-decide only if the
+       *  song is still in its first seconds and nothing better (tag genre) picked the scene */
+      genreHint(title, genres) {
+        st.genreHint = { title, genres: (genres || []).slice(0, 8) };
+        const t = st.track; if (!t || t.title !== title || !st.genreAuto || t.genre || !G) return false;
+        if (performance.now() - t.at > 10000 || (t.decided && st.genreScene)) return false;
+        const s = Scenes.matchGenre(G.genreText('', genres), title, st.skin === 'classic' ? ['layered', 'full', 'video', 'pixel'] : ['layered', 'full', 'video']);
+        if (!s) return false;
+        st.genreScene = s; st.moodScene = null; t.decided = true; applyScene(); return true;
+      },
+      /** a counted play (30 s / half the song): play milestones unlock rare outfits */
+      trackCounted() { const b = st.base; if (!rare || !b || !b.char || !b.char.rareOutfits) return []; const got = rare.countPlay(b); if (got.length && el.onRareUnlock) el.onRareUnlock(got); return got; },
+      setGenreAuto(on) { st.genreAuto = !!on; },
+      setDayMode(m) { st.dayMode = ['day', 'night'].includes(m) ? m : 'auto'; if (G) st.part = G.dayPart(st.dayMode, new Date()); applyScene(); },
+      /** re-check the clock (app calls this every minute); Auto changes day/night between songs or while paused */
+      clockTick() { if (!G) return; const p = G.dayPart(st.dayMode, new Date()); if (p !== st.part && (!st.playing || st.dayMode !== 'auto')) { st.part = p; applyScene(); } },
+      setOutfit(key) { st.outfit = key || ''; applyScene(true); },
+      get outfits() { return outfitList().map((o) => ({ key: o.key, name: o.name, scene: o.scene, sceneName: o.sceneName, thumb: o.thumb, rare: !!o.rare, available: o.available !== false })); },
+      get rareCollection() { return G && rare ? G.collection(Scenes.list, rare) : []; },
+      get rareStore() { return rare; },
+      /** tests / Settings: the genre-pack state */
+      get genreState() { return { part: st.part, dayMode: st.dayMode, weather: st.weather, outfit: st.outfit, rare: st.trackRare && st.trackRare.key, rareFx: st.rareFx, auto: st.genreAuto, base: st.base && st.base.id, view: st.scene && st.scene.id, instrument: st.instrument }; },
+      setWeather(kind) { st.weather = ['rain', 'snow', 'fog', 'storm'].includes(kind) ? kind : null; },
+      /** tests: deterministic rare rolls */
+      setRng(f) { rng = typeof f === 'function' ? f : Math.random; },
+      get instrument() { return st.instrument; },
+      /** tests / debugging: pin the instrument (null = follow the music) */
+      forceInstrument(n) { st.instrForce = n || null; if (!n && picker) picker.reset(); },
+      get instrumentLog() { return picker ? picker.log : []; },
       favorite() { if (!beh.packEvent('message_liked')) beh.emote('love', 2000, 2); stagePx.burst('hearts', 10, (el.stage && el.stage.width / 2) || 100, (el.stage && el.stage.height / 2) || 100); },
       trackFinished() { if (!beh.packEvent('task_finished')) beh.emote('happy', 1800, 1); },
       playlistFinished() { beh.packEvent('big_win'); },

@@ -280,6 +280,18 @@
         <label class="chk" title="Pack scenes with their own colour theme recolour the player while they show"><input type="checkbox" id="optSceneColors" checked> Scene colours</label>
         <label class="chk" title="Pack manifest rule: dance loops only on events, played once"><input type="checkbox" id="optStrict"> Strict pack rules</label>
       </div>
+      <div class="tm-row" id="genreRow">
+        <label class="chk" title="At each new song, pick the scene from the genre tag, Spotify artist genres or the sound; a scene you pick by hand wins until you choose Auto again"><input type="checkbox" id="optGenreAuto" checked> Auto-switch by genre</label>
+        <label class="chk" title="Packs with day and night versions of a scene">Day / night <span class="select-wrap"><select id="optDayNight"><option value="auto">Auto (clock)</option><option value="day">Day</option><option value="night">Night</option></select></span></label>
+        <label class="chk" title="Mix any scene with any Lucielle outfit from your packs">Outfit <span class="select-wrap"><select id="optOutfit"><option value="">Scene’s own</option></select></span></label>
+        <button class="pbtn" id="btnRare" title="Rare outfits you have found or unlocked"><span>✦</span><span>RARE OUTFITS</span></button>
+      </div>
+      <div class="tm-row" id="weatherRow">
+        <label class="chk" title="Rain, snow, fog or storm over the scene from your local weather (Open-Meteo, no account). Off by default."><input type="checkbox" id="optWeather"> Weather layer</label>
+        <label class="chk" title="City for the weather (looked up with Open-Meteo geocoding)">City <input type="text" id="optWeatherCity" placeholder="e.g. Chicago" maxlength="80" spellcheck="false" autocomplete="off" style="width:9em"></label>
+        <label class="chk" title="Use your approximate location instead of a city (asks for permission)"><input type="checkbox" id="optWeatherLoc"> Use my location</label>
+        <span class="pk-sum" id="weatherSum"></span>
+      </div>
     </div>
     <div class="tm-section"><div class="tm-label">Scene &mdash; auto picks by genre tag, tempo &amp; energy</div><div class="sc-grid" id="sceneGrid"></div></div>
     <div class="tm-section"><div class="tm-label">Visual packs &mdash; add new scenes &amp; Lucielle loops without code</div>
@@ -394,12 +406,14 @@
 <input type="file" id="fileInput" multiple hidden accept="audio/*,video/webm,.mp3,.wav,.flac,.ogg,.oga,.opus,.m4a,.mp4,.aac,.webm,.weba,.aif,.aiff,.caf,.wma,.ape,.alac,.mka">
 <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
 
+<dialog id="rareDlg" class="rare-dlg"><div class="rd-head"><b>Rare outfits</b><button class="tb-btn" id="rareClose" aria-label="Close">✕</button></div><div id="rareList" class="rare-list"></div></dialog>
 <script src="packs/luciel-core/pack.js"></script>
 <script src="js/packs.js"></script>
 <script src="mascot/mascot-data.js"></script>
 <script src="js/metadata.js"></script>
 <script src="js/bpm.js"></script>
 <script src="js/scenefx.js"></script>
+<script src="js/genres.js"></script>
 <script src="js/luciel.js"></script>
 <script src="js/tagwriter.js"></script>
 <script src="js/fsx.js"></script>
