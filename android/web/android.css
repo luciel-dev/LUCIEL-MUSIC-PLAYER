@@ -228,6 +228,10 @@ body.skin-aero .sp-top { background: color-mix(in srgb, var(--bg-2) 92%, transpa
 .sp-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--m-acc); }
 .sp-bar b { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--m-acc); }
 .sp-times { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12.5px; color: var(--m-ink-2); font-variant-numeric: tabular-nums; }
+.sp-tempo-row { display: flex; justify-content: center; margin: 8px 0 0; }
+.sp-tempo { font-size: 12px; font-weight: 600; letter-spacing: .02em; padding: 4px 11px; border-radius: 999px; background: color-mix(in srgb, var(--m-ink) 10%, transparent); color: var(--m-ink-2); font-variant-numeric: tabular-nums; }
+.sp-tempo[data-src="live"] { background: color-mix(in srgb, var(--m-acc) 24%, transparent); color: var(--m-ink); }
+.sp-tempo[hidden] { display: none; }
 .sp-transport { display: flex; align-items: center; justify-content: center; gap: 28px; margin: 10px 0 8px; }
 .sp-tb { display: grid; place-items: center; width: 56px; height: 56px; border: 0; border-radius: 50%; background: none; }
 .sp-tb svg { width: 30px; height: 30px; }

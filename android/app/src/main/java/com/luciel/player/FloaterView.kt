@@ -225,14 +225,23 @@ class FloaterView(ctx: Context, private val assets: LucielleAssets, private val 
             rect.set(2 * dp, 2 * dp, W - 2 * dp, W - 2 * dp)
             paint.color = th.frame2; c.drawRect(rect, paint); bevel(c, rect, th, true, 2 * dp)
             dst.set(rect.left + 5 * dp, rect.top + 5 * dp, rect.right - 5 * dp, rect.bottom - 5 * dp)
-            if (art != null) c.drawBitmap(art, null, dst, bmp)
+            val v = look(s)
+            if (v.mascot && v.charUse != "none") {
+                val playing = s?.playing == true && !s.buffering
+                this.art.drawHeadBubble(c, dst.centerX(), dst.centerY(), dst.width() / 2, v, playing, s?.bpm?.takeIf { it > 0f } ?: 110f, beatNow(s), pulse, this.art.emoteNow(v, s?.id, playing, 0f, false), square = true)
+            } else if (art != null) c.drawBitmap(art, null, dst, bmp)
             paint.style = Paint.Style.STROKE; paint.strokeWidth = 2 * dp; paint.color = withAlpha(th.accent, 120 + (130 * pulse).toInt()); c.drawRect(dst, paint); paint.style = Paint.Style.FILL
         } else {
             paint.color = Color.BLACK; paint.shader = RadialGradient(cx, cx, r + 4 * dp, intArrayOf(withAlpha(th.accent, (120 + 120 * pulse).toInt()), withAlpha(th.accent, 0)), floatArrayOf(0.7f, 1f), Shader.TileMode.CLAMP)
             c.drawCircle(cx, cx, r + 4 * dp, paint); paint.shader = null
             paint.color = opaque(th.bg); c.drawCircle(cx, cx, r, paint)
-            if (art != null) {
-                val k = r * (0.94f + 0.03f * pulse)
+            val v = look(s)
+            val k = r * (0.94f + 0.03f * pulse)
+            if (v.mascot && v.charUse != "none") {
+                // the app's scene cropped around Lucielle's head (same outfit / emotes as the stage)
+                val playing = s?.playing == true && !s.buffering
+                this.art.drawHeadBubble(c, cx, cx, k, v, playing, s?.bpm?.takeIf { it > 0f } ?: 110f, beatNow(s), pulse, this.art.emoteNow(v, s?.id, playing, 0f, false))
+            } else if (art != null) {
                 c.save(); clip.reset(); clip.addCircle(cx, cx, k, Path.Direction.CW); c.clipPath(clip)
                 dst.set(cx - k, cx - k, cx + k, cx + k); c.drawBitmap(art, null, dst, bmp); c.restore()
             }
@@ -241,53 +250,41 @@ class FloaterView(ctx: Context, private val assets: LucielleAssets, private val 
         if (s?.playing != true) { paint.color = 0x99000000.toInt(); c.drawCircle(cx, cx, r * 0.38f, paint); paint.color = Color.WHITE; tri(c, cx + 2 * dp, cx, r * 0.2f, true) }
     }
 
-    // stage: scene art (beat zoom), accent glow, Lucielle dancing on the beat
+    // stage: the app's own scene (pack scenes too), light map, Lucielle in the chosen outfit with emotes, visualizer
+    private val art = VisualArt(assets) { invalidate() }
+    private val vizBox = RectF()
+    /** Luciel's current look; set by FloaterController from [VisualHub] (persisted, so it survives a restart) */
+    var visual: VisualState = VisualHub.current
+        set(v) { field = v; invalidate() }
+    private fun look(s: WebState?): VisualState {
+        val v = visual
+        if (v.hasState) return if (s != null && !s.mascotOn && v.mascot) v.copy(mascot = false) else v
+        // the page hasn't published a look yet (first start after the update): its scene id + built-in Lucielle
+        return VisualState(sceneId = s?.sceneId?.ifBlank { null } ?: "pop", pixel = s?.theme?.classic == true, mascot = s?.mascotOn != false)
+    }
     private fun drawStage(c: Canvas, box: RectF, radius: Float, th: FloaterTheme, s: WebState?, beat: Double, pulse: Float) {
         c.save(); clip.reset()
         if (radius > 0) clip.addRoundRect(box, radius, radius, Path.Direction.CW) else clip.addRect(box, Path.Direction.CW)
         c.clipPath(clip)
-        val pixelScene = s?.sceneId?.startsWith("pixel") == true || th.classic
-        val bg = sceneBitmap ?: assets.sceneArt(s?.sceneId?.ifBlank { null } ?: "pop", box.width() > 200 * dp)
-        if (bg != null) {
-            val z = 1.06f + pulse * 0.025f
-            val k = maxOf(box.width() / bg.width, box.height() / bg.height) * z
-            val bw = bg.width * k; val bh = bg.height * k
-            dst.set(box.centerX() - bw / 2, box.centerY() - bh / 2, box.centerX() + bw / 2, box.centerY() + bh / 2)
-            c.drawBitmap(bg, null, dst, if (pixelScene && s?.sceneId?.startsWith("pixel") == true) px else bmp)
-        } else { paint.color = opaque(th.bg3); c.drawRect(box, paint) }
-        paint.color = Color.BLACK; paint.shader = RadialGradient(box.centerX(), box.bottom - box.height() * 0.3f, box.width() * 0.7f, intArrayOf(withAlpha(th.accent, (40 + 120 * pulse).toInt()), 0), null, Shader.TileMode.CLAMP)
-        c.drawRect(box, paint); paint.shader = null
-        if (s?.mascotOn != false) drawLucielle(c, box, th, s, beat, pulse)
-        c.restore()
-        if (th.classic) bevel(c, box, th, raised = false, w = 2 * dp)
-    }
-
-    private fun drawLucielle(c: Canvas, box: RectF, th: FloaterTheme, s: WebState?, beat: Double, pulse: Float) {
-        val size = min(box.width() * 0.96f, box.height() * 0.94f)
-        val cx = box.centerX(); val bottom = box.bottom + size * 0.02f
-        val playing = s?.playing == true && s.buffering.not()
-        var sheet: Bitmap? = null
-        if (playing) {
-            val d = assets.dance(SceneGuess.tier(s?.bpm ?: 0f))
-            if (d != null) {
-                val pos = ((beat / d.loopBeats) % 1.0 + 1.0) % 1.0
-                val idx = (pos * d.frames).toInt().coerceIn(0, d.frames - 1)
-                src.set((idx % d.cols) * d.cell, (idx / d.cols) * d.cell, (idx % d.cols + 1) * d.cell, (idx / d.cols + 1) * d.cell)
-                sheet = d.sheet
+        val v = look(s)
+        val playing = s?.playing == true && !s.buffering
+        val bpm = s?.bpm?.takeIf { it > 0f } ?: 110f
+        val emote = art.emoteNow(v, s?.id, playing, 0f, false)
+        // pack picture not ready yet / never published: the in-memory scene picture from the last report
+        if (v.bg.isEmpty() && sceneBitmap != null) {
+            val bg = sceneBitmap!!
+            val k = maxOf(box.width() / bg.width, box.height() / bg.height) * (1.04f + pulse * 0.02f)
+            dst.set(box.centerX() - bg.width * k / 2, box.centerY() - bg.height * k / 2, box.centerX() + bg.width * k / 2, box.centerY() + bg.height * k / 2)
+            c.drawBitmap(bg, null, dst, bmp)
+            art.drawCharacter(c, box, v, playing, bpm, beat, pulse, emote, box.width() > 200 * dp)
+        } else {
+            vizBox.set(box.left, box.top + box.height() * 0.62f, box.right, box.bottom - box.height() * 0.04f)
+            art.drawStage(c, box, v, playing, bpm, beat, pulse, pulse * 0.6f, emote, box.width() > 200 * dp) {
+                if (box.width() > 120 * dp) art.drawViz(c, vizBox, v.vizMode, null, playing, opaque(th.accent), opaque(th.accent2), pulse)
             }
         }
-        val im = sheet ?: assets.idle() ?: return
-        if (sheet == null) src.set(0, 0, im.width, im.height)
-        val breathe = if (playing) 1f + pulse * 0.03f else 1f + 0.012f * sin(SystemClock.uptimeMillis() / 700.0).toFloat()
-        val sz = size * breathe
-        dst.set(cx - sz / 2, bottom - sz, cx + sz / 2, bottom)
-        if (th.classic) {
-            // chunky pixels: 64 px canvas blown up with nearest-neighbour
-            val pb = pixBmp ?: Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).also { pixBmp = it; pixCanvas = Canvas(it) }
-            pb.eraseColor(Color.TRANSPARENT)
-            pixCanvas!!.drawBitmap(im, src, Rect(0, 0, 64, 64), bmp)
-            c.drawBitmap(pb, null, dst, px)
-        } else c.drawBitmap(im, src, dst, bmp)
+        c.restore()
+        if (th.classic) bevel(c, box, th, raised = false, w = 2 * dp)
     }
 
     private fun drawCoverChip(c: Canvas, x: Float, y: Float, size: Float, th: FloaterTheme) {
@@ -430,7 +427,7 @@ class FloaterView(ctx: Context, private val assets: LucielleAssets, private val 
     private fun tempoChip(c: Canvas, x: Float, cy: Float, th: FloaterTheme, s: WebState?, maxX: Float, onStage: Boolean = false) {
         val bpm = s?.bpm ?: 0f
         if (bpm <= 0f) return
-        val label = "♪ ${bpm.toInt()}" + if (onStage) " BPM" else ""
+        val label = "♩ ${Math.round(bpm)}" + if (onStage) " BPM" else ""
         sub.typeface = if (th.classic) fVt else fAeroSub; sub.textSize = (if (th.classic) 15f else 11f) * dp
         val w = sub.measureText(label) + 12 * dp
         if (x + w > maxX) return

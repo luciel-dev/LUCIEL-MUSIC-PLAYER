@@ -138,8 +138,9 @@ class OverlaySettingsActivity : ComponentActivity() {
         switch("Spotify only (ignore other players)", prefs.spotifyOnly) { prefs.spotifyOnly = it; NowPlayingHub.refresh(); changed(); updateStatus() }
         choice("Hide after the music pauses", listOf("Never" to 0, "10 s" to 10, "20 s" to 20, "1 min" to 60), prefs.autoHideSec) { prefs.autoHideSec = it; changed() }
         slider("Opacity", 30, 100, prefs.overlayOpacity) { prefs.overlayOpacity = it; changed() }
-        val scenes = LucielleAssets(this).scenes.filter { it.kind != "full" }
-        choice("Scene", listOf("Auto (cover colours, title words, tempo)" to "auto") + scenes.map { it.name to it.id }, prefs.overlayScene, vertical = true) { prefs.overlayScene = it; changed() }
+        // the card mirrors Luciel's own stage (scene, outfit, palette, visualizer) – change it in Luciel
+        val vis = VisualHub.current
+        box.addView(label("Scene & look: follows Luciel" + (if (vis.hasState) " – now “${vis.sceneName.ifBlank { vis.sceneId }}”" + (if (vis.charName.isNotBlank()) ", ${vis.charName}" else "") else "") + ". Pick scenes, outfits and colours in Luciel; the card, the bubble and the floating player change with it.", 13f, false, 0xCCFFFFFF.toInt()))
         switch("Listen to the music's levels (needs step 3)", prefs.useVisualizer) { prefs.useVisualizer = it; NowPlayingHub.restartBeats() }
         if (micOk) box.addView(label(when (NowPlayingHub.beats.vizState) {
             "silent" -> "This phone gives the level reader silence (common with some players) – using the steady tempo below."

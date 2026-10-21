@@ -102,6 +102,99 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) report(true); });
   new MutationObserver(() => report(true)).observe($('tTitle') || body, { childList: true, characterData: true, subtree: true });
 
+  // ------------------------------------------------------------------ Luciel's look -> native floater + Spotify card
+  // The native views draw their own stage, so they get the page's *resolved* scene: picture paths (pack pictures are
+  // extracted to files once), Lucielle's outfit sheets + emotes, palette colours and the visualizer style. Sent on every
+  // scene / theme / outfit / visualizer change (incl. automatic genre / mood switching) and persisted natively.
+  const VIS = { lastKey: '', gen: 0, files: new Map(), timer: 0, sent: 0 };
+  const VMODES = ['spectrum', 'scope', 'both', 'off'];
+  function assetPath(u) {
+    if (!u) return '';
+    if (/^(blob:|data:)/.test(u)) return null;                          // pack file: needs extracting
+    let p = String(u);
+    if (p.startsWith(location.origin)) p = p.slice(location.origin.length);
+    p = p.replace(/^\.?\/+/, '').split(/[?#]/)[0];
+    return /^https?:/.test(p) ? '' : 'asset:www/' + p;
+  }
+  // pack pictures: big sprite sheets are halved (cells 192 px), backgrounds capped at 1280 px – the native views are small
+  async function shrink(blob, kind) {
+    const bm = await createImageBitmap(blob);
+    const max = kind === 'sheet' ? Math.max(bm.width, bm.height) / 2 : kind === 'still' ? 640 : 1280;
+    const k = Math.min(1, max / Math.max(bm.width, bm.height));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bm.width * k)); c.height = Math.max(1, Math.round(bm.height * k));
+    c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height); bm.close && bm.close();
+    return c.toDataURL(kind === 'bg' ? 'image/jpeg' : 'image/webp', kind === 'bg' ? 0.86 : 0.9);
+  }
+  const busy = new Map();
+  function packFile(url, key, kind) {
+    if (VIS.files.has(url)) return Promise.resolve(VIS.files.get(url));
+    if (!busy.has(url)) busy.set(url, extract(url, key, kind).finally(() => busy.delete(url)));
+    return busy.get(url);
+  }
+  async function extract(url, key, kind) {
+    const t0 = performance.now();
+    const blob = await (await fetch(url)).blob();
+    const k = key + '-' + blob.size;
+    let p = '';
+    try { p = N.visualHas(k, blob.size) || ''; } catch (e) {}
+    if (!p) { p = N.visualPut(k, blob.size, await shrink(blob, kind)) || ''; if (p && window.LucielDebug) window.LucielDebug.add('visual', `extracted ${key} for the floating views (${Math.round(performance.now() - t0)} ms)`); }
+    if (p) VIS.files.set(url, p);
+    return p;
+  }
+  /** a scene file → native path now if known ('' = still being extracted); queues the extraction */
+  function fileFor(url, key, kind, todo) {
+    if (!url) return '';
+    const a = assetPath(url); if (a !== null) return a;
+    if (VIS.files.has(url)) return VIS.files.get(url);
+    todo.push([url, key, kind]); return '';
+  }
+  function visualState(todo) {
+    const s = (A.luciel && A.luciel.scene) || {}, S = A.settings, C = s.char || {};
+    const classic = S.skin === 'classic', id = s.id || '';
+    const sheet = (d, key) => d && d.sheet ? { file: fileFor(d.sheet, key, 'sheet', todo), frames: d.frames || 1, cols: d.columns || d.cols || 1, beats: d.beats || 8, loopBpm: d.loopBpm || 120 } : null;
+    const dance = {}, emotes = {}, stills = {};
+    Object.keys(C.dance || {}).forEach((k) => { const x = sheet(C.dance[k], `${id}/dance-${k}`); if (x) dance[k] = x; });
+    Object.keys(C.emotes || {}).forEach((k) => { const e = C.emotes[k]; if (typeof e === 'string') stills[k] = fileFor(e, `${id}/emote-${k}`, 'still', todo); else { const x = sheet(e, `${id}/emote-${k}`); if (x) emotes[k] = x; } });
+    const R = s.react || {};
+    const th = { accent: cssVar('--accent'), accent2: cssVar('--accent-2'), bg3: cssVar('--bg-3'), text: cssVar('--text'), lcdBg: cssVar('--lcd-bg'), lcdFg: cssVar('--lcd-fg'), frame1: cssVar('--c-frame-1'), frame2: cssVar('--c-frame-2'), frame3: cssVar('--c-frame-3'), frameDark: cssVar('--c-frame-dark') };
+    return {
+      scene: id, sceneName: s.name || '', kind: s.kind || 'layered', pack: s.pack || '',
+      bg: fileFor(classic ? (s.px || s.image) : s.image, `${id}/bg${classic ? '-px' : ''}`, 'bg', todo),
+      glow: classic ? '' : fileFor(s.glow, `${id}/glow`, 'bg', todo),
+      pixel: classic, fullArt: s.kind === 'full' || !!s.hasCharacter,
+      char: { use: C.use || 'lucielle', name: C.name || '', scale: C.scale || 1, dance, idle: C.idle ? fileFor(C.idle, `${id}/idle`, 'still', todo) : '', emotes, stills, events: C.events || {} },
+      accent: th.accent, accent2: th.accent2, bg3: th.bg3, text: th.text, lcdBg: th.lcdBg, lcdFg: th.lcdFg, frame1: th.frame1, frame2: th.frame2, frame3: th.frame3, frameDark: th.frameDark,
+      skin: S.skin, palette: S.palette, vizMode: VMODES.includes(S.vizMode) ? S.vizMode : 'spectrum',
+      mascot: S.mascot !== false, mascotSize: S.mascotSize || 'm', glowColor: R.glowColor || (s.colors && s.colors.glow) || '',
+    };
+  }
+  // ('bg' key in the theme is the panel colour; the scene picture travels as "bg" too, so the panel colour goes as "bg2")
+  function publishVisual(why) {
+    const todo = [];
+    const v = visualState(todo);
+    v.bg2 = cssVar('--bg-2');
+    const key = JSON.stringify(v);
+    if (key !== VIS.lastKey) {
+      VIS.lastKey = key; VIS.sent++;
+      try { N.visualState(JSON.stringify(Object.assign({ at: Date.now() }, v))); } catch (e) {}
+      if (window.LucielDebug && why !== 'tick') window.LucielDebug.add('visual', `floating views follow: ${v.sceneName || v.scene || '—'} · ${v.palette}/${v.skin} · ${v.char.use}${v.char.name ? ' ' + v.char.name : ''} · viz ${v.vizMode} (${why || 'change'})`);
+    }
+    if (todo.length) {
+      const g = ++VIS.gen;
+      (async () => { for (const [u, k, kind] of todo) { if (g !== VIS.gen) return; try { await packFile(u, k, kind); } catch (e) { VIS.files.set(u, ''); } } if (g === VIS.gen) publishVisual('pack files ready'); })();
+    }
+  }
+  const schedVisual = (why) => { clearTimeout(VIS.timer); VIS.timer = setTimeout(() => publishVisual(why), 80); };
+  if (A.luciel) ['setTheme', 'setManual', 'trackStarted', 'moodCheck', 'scenesChanged', 'setOptions'].forEach((m) => {
+    const f = A.luciel[m]; if (typeof f !== 'function') return;
+    A.luciel[m] = function () { const r = f.apply(this, arguments); schedVisual(m); return r; };
+  });
+  window.addEventListener('luciel:settings', () => schedVisual('settings'));
+  new MutationObserver(() => schedVisual('theme')).observe(body, { attributes: true, attributeFilter: ['data-palette', 'data-skin', 'data-scene-kind'] });
+  setInterval(() => publishVisual('tick'), 1500);                  // safety net (scene changes made inside the stage)
+  schedVisual('start');
+  window.LucielVisual = { publish: publishVisual, get sent() { return VIS.sent; }, state: () => visualState([]) };
+
   // commands from the notification / lock screen / headset / audio focus
   // a play press with nothing loaded (headset button, notification, Bluetooth car kit) starts the queue; it never opens the file picker
   const playFromIdle = () => { if (A.current) { A.togglePlay(); return; } if (A.tracks.length) A.playTrack(A.tracks[0]); };
@@ -267,12 +360,20 @@
     renderChip();
   }
 
+  let bgSceneKey = '', extScened = false;
   function onExt(st, force) {
     EXT.state = st;
     if (!EXT.on) {
       // auto-switch: outside player starts while Luciel itself is idle
       // (the phone layout has its own Spotify tab, so no automatic takeover of the Now Playing stage there)
       if (st && st.active && st.playing && audio.paused && prefs.autoExtMode !== false && appVisible && EXT.dismissedKey !== st.key && !mobileUI()) enterExt(false);
+      // Spotify playing while Luciel is idle (app in the background / another tab): the stage – and so the floating
+      // card – still follows the song's scene, exactly like the Spotify tab would, unless the user picked a scene
+      else if (st && st.active && st.playing && audio.paused && (A.settings.scene || 'auto') === 'auto' && st.key !== bgSceneKey) {
+        bgSceneKey = st.key; extScened = true;
+        A.luciel.trackStarted({ genre: st.genre || '' }, st.title);
+        A.luciel.setManual(st.scene || 'auto');
+      }
       renderChip(); return;
     }
     EXT.playing = !!(st && st.active && st.playing);
@@ -299,9 +400,11 @@
   }
   B.extMode = (on) => {
     if (on && mobileUI()) { closeSheet(); window.LucielMobile.setTab('spotify'); return; } if (on) { try { onExt(JSON.parse(N.extState()), false); } catch (e) {} enterExt(true); } else exitExt(true); };
-  B.visible = (v) => { appVisible = v; if (v && EXT.on && !pollRaf) pollRaf = requestAnimationFrame(poll); if (v) { try { onExt(JSON.parse(N.extState()), false); } catch (e) {} } };
+  // back in front: a fresh snapshot for everything (stage, Spotify tab, sheet), not just the scene logic
+  B.visible = (v) => { appVisible = v; if (v && EXT.on && !pollRaf) pollRaf = requestAnimationFrame(poll); if (v) { try { B.ext(JSON.parse(N.extState())); } catch (e) {} } };
   audio.addEventListener('play', () => {
     if (EXT.on) exitExt(false);
+    if (extScened) { extScened = false; bgSceneKey = ''; A.luciel.setManual(A.settings.scene || 'auto'); }
     // one source at a time: Luciel starting its own music pauses Spotify through its media session
     const st = EXT.state;
     if (st && st.active && st.playing) { try { N.extCommand('pause', 0); } catch (e) {} st.playing = false; if (window.LucielDebug) window.LucielDebug.add('source', `paused ${st.app || 'Spotify'}: Luciel started playing (one source at a time)`); }

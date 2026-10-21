@@ -39,18 +39,22 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
         set(v) { field = v; requestLayout(); invalidate() }
     var track: ExtTrack? = null
         set(v) { field = v; invalidate(); ensureTicking() }
-    var sceneId = "auto"
+    /** Luciel's current look (scene, outfit, palette, visualizer) – the card mirrors the app's stage */
+    var visual: VisualState = VisualHub.current
+        set(v) { field = v; invalidate() }
+    private val art = VisualArt(assets) { invalidate() }
+    private var shownKey: String? = null
 
     private val dp = resources.displayMetrics.density
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val text = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) }
     private val sub = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xCCFFFFFF.toInt() }
-    private val rect = RectF(); private val src = Rect(); private val dst = RectF()
+    private val rect = RectF(); private val dst = RectF()
+    private val stageBox = RectF(); private val vizBox = RectF()
     private val clip = Path()
     private var ticking = false
     private var lastDraw = 0L
     private var frame: BeatEngine.Frame? = null
-    private val bars = FloatArray(24)
 
     // hit boxes (view coords)
     private val btnPrev = RectF(); private val btnPlay = RectF(); private val btnNext = RectF()
@@ -82,37 +86,27 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
     override fun onDraw(c: Canvas) {
         val W = width.toFloat(); val H = height.toFloat()
         val t = track; val f = frame
-        val now = SystemClock.uptimeMillis()
         val playing = t?.playing == true
         val beat = f?.beat ?: 0.0
         val ph = beat - floor(beat)
         val pulse = if (playing) Math.exp(-ph * 5.0).toFloat() else 0f
-        val accent = t?.tint?.accent ?: 0xFF6CC8FF.toInt()
-        val accent2 = t?.tint?.accent2 ?: 0xFFB7E2FF.toInt()
-        if (collapsed) { drawBubble(c, W, accent, pulse, playing); return }
+        val v = stageState(t)
+        val accent = if (visual.hasState) VisualArt.opaque(v.theme.accent) else t?.tint?.accent ?: 0xFF6CC8FF.toInt()
+        val accent2 = if (visual.hasState) VisualArt.opaque(v.theme.accent2) else t?.tint?.accent2 ?: 0xFFB7E2FF.toInt()
+        val bpm = f?.bpm ?: 120f
+        val emote = art.emoteNow(v, t?.trackKey, playing, f?.bass ?: 0f, f?.source == "live")
+        logShown(t)
+        if (collapsed) { drawBubble(c, W, v, accent, pulse, playing, bpm, beat, emote); return }
 
         val r = 22 * dp
         clip.reset(); rect.set(0f, 0f, W, H); clip.addRoundRect(rect, r, r, Path.Direction.CW)
         c.save(); c.clipPath(clip)
-        // scene background (slight beat zoom)
-        val scene = resolveScene(t)
-        val bg = assets.sceneArt(scene, W > 260 * dp)
-        if (bg != null) {
-            val z = 1.08f + pulse * 0.025f
-            val s = maxOf(W / bg.width, H / bg.height) * z
-            val bw = bg.width * s; val bh = bg.height * s
-            dst.set((W - bw) / 2, (H - bh) / 2 - 6 * dp, (W + bw) / 2, (H + bh) / 2 - 6 * dp)
-            paint.alpha = 255; c.drawBitmap(bg, null, dst, paint)
-        } else { paint.color = t?.tint?.bgDark ?: 0xFF1B2A3A.toInt(); c.drawRect(rect, paint) }
-        // bass glow
+        // the app's stage: same scene picture, light map, Lucielle outfit + emotes, visualizer style
         val bass = f?.bass ?: 0f
+        stageBox.set(0f, H * 0.1f, W, H * 0.84f)
+        vizBox.set(0f, H * 0.56f, W, H * 0.8f)
+        art.drawStage(c, rect, v, playing, bpm, beat, pulse, bass, emote, W > 260 * dp, stageBox) { art.drawViz(c, vizBox, v.vizMode, f, playing, accent, accent2, pulse) }
         val sh = shades(W, H, accent)
-        paint.shader = sh.glow; paint.alpha = (70 + 150 * (bass + pulse * 0.4f).coerceAtMost(1f)).toInt().coerceIn(0, 255)
-        c.drawRect(rect, paint); paint.shader = null; paint.alpha = 255
-        // spectrum bars
-        drawBars(c, W, H, f, accent, accent2, playing)
-        // Lucielle
-        drawLucielle(c, W, H, t, f, pulse, playing, now)
         // top + bottom shades for legibility
         paint.shader = sh.top; c.drawRect(0f, 0f, W, H * 0.26f, paint)
         paint.shader = sh.bottom; c.drawRect(0f, H * 0.7f, W, H, paint)
@@ -125,10 +119,20 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
         rect.inset(dp, dp); c.drawRoundRect(rect, r, r, paint); paint.style = Paint.Style.FILL
     }
 
-    private fun resolveScene(t: ExtTrack?): String {
-        if (sceneId != "auto") return sceneId
+    /** what to draw: the app's published look, or (before the app has ever published one) a guess from the song */
+    private fun stageState(t: ExtTrack?): VisualState {
+        if (visual.hasState) return visual
         val f = frame
-        return SceneGuess.sceneFor(t?.genre, t?.tint?.family ?: "aero", f?.bpm ?: 0f, f?.energy ?: 0f)
+        return VisualState(sceneId = SceneGuess.sceneFor(t?.genre, t?.tint?.family ?: "aero", f?.bpm ?: 0f, f?.energy ?: 0f))
+    }
+
+    /** sync debugging: how long after the media-session event the new song / play state reached the card */
+    private fun logShown(t: ExtTrack?) {
+        t ?: return
+        val k = t.trackKey + "|" + t.playing + "|" + t.artVersion
+        if (k == shownKey) return
+        shownKey = k
+        if (t.eventAt > 0) DebugLog.add("sync", "card: “${t.title.take(40)}” ${if (t.playing) "playing" else "paused"}${if (NowPlayingHub.artBitmap != null) " +cover" else ""} shown ${SystemClock.elapsedRealtime() - t.eventAt} ms after the session event")
     }
 
     /** gradients only change with the card size / accent colour: build them once, not every frame */
@@ -140,48 +144,6 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
             RadialGradient(W / 2, H * 0.62f, W * 0.7f, intArrayOf(withAlpha(accent, 255), Color.TRANSPARENT), null, Shader.TileMode.CLAMP),
             LinearGradient(0f, 0f, 0f, H * 0.26f, 0xAA000000.toInt(), Color.TRANSPARENT, Shader.TileMode.CLAMP),
             LinearGradient(0f, H * 0.7f, 0f, H, Color.TRANSPARENT, 0xCC000000.toInt(), Shader.TileMode.CLAMP)).also { shadeCache = it }
-    }
-
-    private fun drawBars(c: Canvas, W: Float, H: Float, f: BeatEngine.Frame?, a1: Int, a2: Int, playing: Boolean) {
-        val n = bars.size
-        val mags = f?.mags
-        for (i in 0 until n) {
-            var v = 0f
-            if (mags != null && playing) {
-                val lo = (Math.pow(mags.size.toDouble(), i.toDouble() / n) ).toInt().coerceIn(1, mags.size - 1)
-                val hi = (Math.pow(mags.size.toDouble(), (i + 1.0) / n)).toInt().coerceIn(lo + 1, mags.size)
-                var m = 0; for (k in lo until hi) if (mags[k] > m) m = mags[k]
-                v = m / 255f
-            }
-            bars[i] = if (v > bars[i]) v else bars[i] * 0.86f
-        }
-        val bw = W / n; val base = H * 0.8f; val maxH = H * 0.24f
-        for (i in 0 until n) {
-            val h = bars[i] * maxH
-            paint.color = withAlpha(if (i % 2 == 0) a1 else a2, 150)
-            c.drawRoundRect(i * bw + bw * 0.2f, base - h, (i + 1) * bw - bw * 0.2f, base, bw * 0.3f, bw * 0.3f, paint)
-        }
-    }
-
-    private fun drawLucielle(c: Canvas, W: Float, H: Float, t: ExtTrack?, f: BeatEngine.Frame?, pulse: Float, playing: Boolean, now: Long) {
-        val size = min(W * 0.86f, H * 0.62f)
-        val cx = W / 2; val bottom = H * 0.83f
-        if (playing && f != null) {
-            val d = assets.dance(SceneGuess.tier(f.bpm)) ?: return
-            val pos = ((f.beat / d.loopBeats) % 1.0 + 1.0) % 1.0
-            val idx = (pos * d.frames).toInt().coerceIn(0, d.frames - 1)
-            val col = idx % d.cols; val row = idx / d.cols
-            src.set(col * d.cell, row * d.cell, (col + 1) * d.cell, (row + 1) * d.cell)
-            val s = size * (1f + pulse * 0.03f)
-            dst.set(cx - s / 2, bottom - s, cx + s / 2, bottom)
-            paint.alpha = 255; c.drawBitmap(d.sheet, src, dst, paint)
-        } else {
-            val im = assets.idle() ?: return
-            val breathe = 1f + 0.012f * sin(now / 700.0).toFloat()
-            val s = size * 0.92f
-            dst.set(cx - s / 2, bottom - s * breathe, cx + s / 2, bottom)
-            paint.alpha = 255; c.drawBitmap(im, null, dst, paint)   // fully opaque, like the dance frames
-        }
     }
 
     private fun drawHeader(c: Canvas, W: Float, t: ExtTrack?) {
@@ -240,7 +202,7 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
         } else tri(c, btnPlay.centerX() + 2 * dp, btnPlay.centerY(), 10 * dp, true)
         // tempo chip (tap = tap tempo). Shows where the beat comes from.
         sub.textSize = 10 * dp
-        val label = when (f?.source) { "live" -> "♪ ${f.bpm.toInt()} live"; "tap" -> "♪ ${f.bpm.toInt()} tap"; else -> "♪ ${(f?.bpm ?: 120f).toInt()} tap me" }
+        val label = TempoLabel.of(f?.bpm ?: 120f, f?.source)
         val lw = sub.measureText(label) + 14 * dp
         btnTempo.set(12 * dp, H - 74 * dp, 12 * dp + lw, H - 56 * dp)
         paint.color = 0x77000000; c.drawRoundRect(btnTempo, 9 * dp, 9 * dp, paint)
@@ -251,11 +213,12 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
         for (i in 1..3) c.drawLine(W - 6 * dp - i * 5 * dp, H - 6 * dp, W - 6 * dp, H - 6 * dp - i * 5 * dp, paint)
     }
 
-    private fun drawBubble(c: Canvas, W: Float, accent: Int, pulse: Float, playing: Boolean) {
+    private fun drawBubble(c: Canvas, W: Float, v: VisualState, accent: Int, pulse: Float, playing: Boolean, bpm: Float, beat: Double, emote: String?) {
         val cx = W / 2; val r = W / 2 - 4 * dp
         paint.color = withAlpha(accent, (90 + 140 * pulse).toInt()); c.drawCircle(cx, cx, r + 3 * dp * pulse, paint)
-        val ic = assets.icon()
-        if (ic != null) { val s = r * 2 * (1f + 0.04f * pulse); dst.set(cx - s / 2, cx - s / 2, cx + s / 2, cx + s / 2); c.drawBitmap(ic, null, dst, paint) }
+        // the app's scene, cropped around Lucielle's head (same outfit); falls back to the app icon if the mascot is off
+        if (v.mascot && v.charUse != "none") art.drawHeadBubble(c, cx, cx, r - 2 * dp, v, playing, bpm, beat, pulse, emote)
+        else assets.icon()?.let { ic -> val s = r * 2 * (1f + 0.04f * pulse); dst.set(cx - s / 2, cx - s / 2, cx + s / 2, cx + s / 2); c.drawBitmap(ic, null, dst, paint) }
         if (!playing) { paint.color = 0x88000000.toInt(); c.drawCircle(cx, cx, r * 0.36f, paint); paint.color = Color.WHITE; tri(c, cx + 2 * dp, cx, r * 0.22f, true) }
     }
 

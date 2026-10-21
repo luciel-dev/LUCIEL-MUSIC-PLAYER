@@ -69,6 +69,11 @@ patch('js/luciel.js', [
   // (opacity fixes for Lucielle now live in aero-player itself, since desktop 1.0.4)
 ]);
 
+patch('js/visualizer.js', [
+  // scope / both before anything has played (no analyser yet): draw a flat line instead of throwing every frame
+  ['        const t = this.time, step = t.length / W;', '        const t = this.time || new Uint8Array(1024).fill(128), step = t.length / W;', 'scope without analyser'],
+]);
+
 // Android layer
 fs.cpSync(path.join(ROOT, 'web'), path.join(DST, 'android'), { recursive: true });
 // bundled visual packs (installed on first launch, re-installable from the Phone sheet)

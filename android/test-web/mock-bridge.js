@@ -35,4 +35,9 @@ window.LucielAndroid = {
   setPref: (k, v) => { window.__prefs[k] = v === 'true' ? true : v === 'false' ? false : v; }, open: (w) => window.__calls.push('open:' + w),
   systemBars: (bg, light) => { window.__bars = { bg, light }; }, haptic: () => {}, toast: () => {}, exitApp: () => {},
   floater: (c) => window.__calls.push('floater:' + c), immersive: (on) => window.__calls.push('immersive:' + on),
+  // Luciel's look for the native floater / Spotify card (WebBridge.visualState / visualHas / visualPut)
+  visualState: (j) => window.__visual.push(JSON.parse(j)),
+  visualHas: (k, size) => (window.__vfiles[k] && window.__vfiles[k].size === size ? window.__vfiles[k].path : ''),
+  visualPut: (k, size, b64) => { const path = '/data/user/0/com.luciel.player/files/visual/' + k.replace(/[^A-Za-z0-9._-]+/g, '_'); window.__vfiles[k] = { size, path, len: b64.length, mime: (b64.match(/^data:([^;]+)/) || [])[1] }; window.__calls.push('visualPut:' + k); return path; },
 };
+window.__visual = []; window.__vfiles = {};

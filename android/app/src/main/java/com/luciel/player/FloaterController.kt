@@ -55,6 +55,8 @@ object FloaterController : FloaterView.Host {
         app = ctx.applicationContext; prefs = Prefs.get(app)
         cs = cs.copy(closed = prefs.floaterClosed)
         NowPlayingHub.listeners.add { main.post { update() } }
+        // the page's scene / palette / outfit changed (incl. auto genre / mood switching): mirror it at once
+        VisualHub.listeners.add { vs -> view?.visual = vs }
     }
 
     val isShowing get() = view != null

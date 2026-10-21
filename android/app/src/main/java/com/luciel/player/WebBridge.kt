@@ -99,6 +99,18 @@ class WebBridge(private val act: MainActivity) {
     }
 
     // ------------------------------------------------------------ outside players (Spotify ...)
+    // ------------------------------------------------------------ Luciel's look -> floater / Spotify card
+    /** the page's resolved stage (scene, outfit, palette, visualizer); persisted so the overlays keep it after a restart */
+    @JavascriptInterface fun visualState(json: String) {
+        try { VisualHub.set(json) } catch (e: Throwable) { DebugLog.add("visual", "bad visual state: ${e.message}") }
+    }
+    /** path of an already extracted pack picture with this key and source size, or "" */
+    @JavascriptInterface fun visualHas(key: String, size: Long): String = VisualHub.existing(key, size)?.absolutePath ?: ""
+    /** store a pack picture (base64) for the native views; returns its file path ("" on failure) */
+    @JavascriptInterface fun visualPut(key: String, size: Long, b64: String): String = try {
+        VisualHub.put(key, size, Base64.decode(b64.substringAfter(","), Base64.DEFAULT))?.absolutePath ?: ""
+    } catch (e: Throwable) { DebugLog.add("visual", "store $key failed: ${e.message}"); "" }
+
     @JavascriptInterface fun extState(): String = extJson(NowPlayingHub.current).toString()
 
     /** one animation frame of beat data: "bpm|beat|source|playing|bass|energy|vocal|high|sampleRate|b64(mags)|b64(wave)" */
@@ -203,13 +215,7 @@ class WebBridge(private val act: MainActivity) {
             webRef?.get()?.evaluateJavascript("window.LucielAndroidBridge&&LucielAndroidBridge.cmd(${JSONObject.quote(cmd)},$arg)", null)
         }
 
-        fun themeOf(o: JSONObject): FloaterTheme {
-            val d = FloaterTheme()
-            fun c(k: String, fb: Int) = CssColor.parse(o.optString(k, ""), fb)
-            return FloaterTheme(skin = o.optString("skin", "aero").ifBlank { "aero" }, palette = o.optString("palette", "aero").ifBlank { "aero" },
-                accent = c("accent", d.accent), accent2 = c("accent2", d.accent2), bg = c("bg", d.bg), bg3 = c("bg3", d.bg3), text = c("text", d.text),
-                lcdBg = c("lcdBg", d.lcdBg), lcdFg = c("lcdFg", d.lcdFg), frame1 = c("frame1", d.frame1), frame2 = c("frame2", d.frame2), frame3 = c("frame3", d.frame3), frameDark = c("frameDark", d.frameDark))
-        }
+        fun themeOf(o: JSONObject): FloaterTheme = Themes.of(o)
 
         fun extJson(t: ExtTrack?): JSONObject = if (t == null) JSONObject().put("active", false) else JSONObject().apply {
             put("active", true); put("pkg", t.pkg); put("app", t.appLabel); put("spotify", t.isSpotify)
@@ -217,7 +223,13 @@ class WebBridge(private val act: MainActivity) {
             put("duration", t.durationMs / 1000.0); put("position", t.positionNow() / 1000.0); put("playing", t.playing); put("key", t.trackKey)
             put("art", if (NowPlayingHub.artJpeg != null) LocalContent.ORIGIN + "/_n/ext-art?v=" + t.artVersion else JSONObject.NULL)
             t.tint?.let { ti -> put("tint", JSONObject().put("accent", ti.hex(ti.accent)).put("accent2", ti.hex(ti.accent2)).put("bg", ti.hex(ti.bgDark)).put("family", ti.family)) }
-            put("scene", SceneGuess.sceneFor(t.genre, t.tint?.family ?: "aero", NowPlayingHub.beats.frame().bpm, 0.4f))
+            val fr = NowPlayingHub.beats.frame()
+            put("scene", SceneGuess.sceneFor(t.genre, t.tint?.family ?: "aero", fr.bpm, 0.4f))
+            // sync: the page extrapolates position = position + (Date.now() - posWall) * speed (while playing), and logs
+            // how long a session event took to reach the screen (evAt = wall-clock time of the media-session callback)
+            val wall = System.currentTimeMillis(); val el = android.os.SystemClock.elapsedRealtime()
+            put("posWall", wall); put("speed", t.speed.toDouble()); put("evAt", wall - (el - t.eventAt).coerceAtLeast(0))
+            put("bpm", fr.bpm.toDouble()); put("bpmSource", fr.source); put("tempo", TempoLabel.of(fr.bpm, fr.source))
         }
     }
 }

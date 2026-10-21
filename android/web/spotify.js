@@ -102,8 +102,32 @@
   function setSource(s, why) { if (s === source) return; source = s; store.set(K_SRC, s); DBG.add('source', `${s === 'spotify' ? 'Spotify' : 'Luciel'} is the active source (${why})`); syncMini(); }
   /** which source the mini bar / buttons follow right now */
   function activeSource() { if (!audio.paused) return 'local'; if (st().active && st().playing) return 'spotify'; return source; }
-  let pos = 0, posAt = 0;
-  const posNow = () => { const s = st(); const d = s.duration || 0; const p = pos + (s.playing ? (performance.now() - posAt) / 1000 : 0); return d ? Math.min(d, p) : p; };
+  // ---- position sync: Android sends the position measured at `posWall` (wall clock ms) and the playback speed, so the
+  // bar runs on from there however late the update arrives; a seek holds its target until Spotify confirms it.
+  const Sync = {
+    base: { pos: 0, wall: 0, speed: 1, playing: false, key: '' }, hold: null,
+    at(b, now) { return b.pos + (b.playing ? Math.max(0, now - b.wall) / 1000 * (b.speed || 1) : 0); },
+    now(now = Date.now()) { const d = st().duration || 0, p = Sync.at(Sync.base, now); return d ? Math.max(0, Math.min(d, p)) : Math.max(0, p); },
+    /** a fresh state from Android; returns what was done (for the tests / debug log) */
+    take(s, now = Date.now()) {
+      const nb = { pos: s.position || 0, wall: s.posWall || now, speed: s.speed > 0 ? s.speed : 1, playing: !!s.playing, key: s.key || s.title || '' };
+      const h = Sync.hold;
+      if (h && (now - h.at > 2500 || h.key !== nb.key)) Sync.hold = null;
+      if (Sync.hold) {
+        // waiting for Spotify to report the seek: ignore stale positions from before it
+        if (Math.abs(Sync.at(nb, now) - Sync.at(Sync.hold.base, now)) > 1.2) { Sync.base = Object.assign({}, Sync.hold.base, { playing: nb.playing, wall: Sync.hold.base.wall }); return 'held'; }
+        Sync.hold = null;
+      }
+      const cur = Sync.at(Sync.base, now), inc = Sync.at(nb, now);
+      // same song, still playing, the report is a hair behind what is on screen: don't jerk the bar back
+      if (Sync.base.key === nb.key && nb.playing && Sync.base.playing && inc < cur && cur - inc < 0.35) return 'kept';
+      Sync.base = nb; return 'moved';
+    },
+    seek(sec, now = Date.now()) { Sync.base = Object.assign({}, Sync.base, { pos: sec, wall: now }); Sync.hold = { at: now, key: Sync.base.key, base: Object.assign({}, Sync.base) }; },
+    pause(now = Date.now()) { Sync.base = Object.assign({}, Sync.base, { pos: Sync.at(Sync.base, now), wall: now, playing: false }); },
+    resume(now = Date.now()) { Sync.base = Object.assign({}, Sync.base, { wall: now, playing: true }); },
+  };
+  const posNow = () => Sync.now();
 
   /** one source at a time: playing on the Spotify tab pauses Luciel's own music (and Luciel's play pauses Spotify, see android.js) */
   function cmd(c, arg = 0) {
@@ -118,7 +142,7 @@
     if (starts) setSource('spotify', 'play on the Spotify tab');
     if (starts && open) { try { window.LucielAndroidUI.extView(true); } catch (e) {} }   // the stage follows Spotify again
     try { N.extCommand(c, arg); } catch (e) {}
-    if (c === 'toggle') { s.playing = !s.playing; if (!s.playing) { pos = posNow(); posAt = performance.now(); } else posAt = performance.now(); paintNow(); syncMini(); }
+    if (c === 'toggle') { s.playing = !s.playing; if (!s.playing) Sync.pause(); else Sync.resume(); paintNow(); syncMini(); kick(); }
   }
 
   // history capture: every media-session song Luciel sees playing (cover kept as a small JPEG)
@@ -235,6 +259,7 @@
       <div class="sp-nowart ${nowView === 'lucielle' ? 'is-stage' : ''}" id="spNowArt">${nowView === 'cover' ? `<img id="spBigCover" alt="">` : '<div class="sp-stage" id="spStage"></div>'}</div>
       <div class="sp-nowmeta"><div class="sp-txt"><b id="spNTitle"></b><span id="spNArtist"></span></div><button class="sp-ic" data-act="openSpotify" title="Open Spotify">${I.open}</button></div>
       <div class="sp-seek" id="spSeek"><div class="sp-bar"><i id="spFill"></i><b id="spKnob"></b></div><div class="sp-times"><span id="spCur">0:00</span><span id="spDur">0:00</span></div></div>
+      <div class="sp-tempo-row"><span class="sp-tempo" id="spTempo" title="Lucielle's tempo: live = measured from the music, tapped = your taps, steady = a fixed beat (tap the tempo to correct it)"></span></div>
       <div class="sp-transport"><button class="sp-tb" data-act="prev" title="Previous">${I.prev}</button><button class="sp-tb big" data-act="toggle" id="spBigPlay" title="Play / pause"></button><button class="sp-tb" data-act="next" title="Next">${I.next}</button></div>
       <div class="sp-row2"><button class="sp-btn" data-act="openSpotify">Open Spotify</button>${perms().mic ? '' : '<button class="sp-btn" data-act="tap">Tap tempo</button>'}<button class="sp-btn" data-act="popout">Pop out</button></div>`;
   }
@@ -245,6 +270,7 @@
     t.textContent = s.active ? s.title || 'Unknown song' : 'Nothing playing'; $('spNArtist').textContent = s.active ? [s.artist, s.album].filter(Boolean).join(' · ') : 'Play a song in Spotify';
     const c = $('spBigCover'); if (c) { const src = s.art || coverOf(s.active ? s : { title: 'Luciel' }); if (c.getAttribute('src') !== src) c.src = src; }
     $('spBigPlay').innerHTML = s.playing ? I.pause : I.play;
+    const tp = $('spTempo'); if (tp) { tp.hidden = !s.active; tp.textContent = tempoLabel(s); tp.dataset.src = s.bpmSource || ''; }
     paintTime();
   }
   function paintTime() {
@@ -260,7 +286,7 @@
     const frac = (e) => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
     el.addEventListener('pointerdown', (e) => { if (!(st().duration > 0)) return; try { el.setPointerCapture(e.pointerId); } catch (x) {} seekDrag = frac(e); paintTime(); });
     el.addEventListener('pointermove', (e) => { if (seekDrag == null) return; seekDrag = frac(e); paintTime(); });
-    const end = (e) => { if (seekDrag == null) return; const f = seekDrag; seekDrag = null; if (e.type !== 'pointercancel') { const sec = f * (st().duration || 0); N.extCommand('seek', sec); pos = sec; posAt = performance.now(); } paintTime(); };
+    const end = (e) => { if (seekDrag == null) return; const f = seekDrag; seekDrag = null; if (e.type !== 'pointercancel') { const sec = f * (st().duration || 0); N.extCommand('seek', sec); Sync.seek(sec); } paintTime(); };
     el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
   }
   // the Lucielle stage lives in the Now Playing tab; the "Lucielle" view borrows it
@@ -328,15 +354,34 @@
   }
 
   // ------------------------------------------------------------------ live updates from android.js
-  let ticker = 0, heroKey = null;
+  let ticker = 0, raf = 0, heroKey = null, lastPlay = null, lastArt = null;
   function onState(s) {
     s = s || st();
-    pos = s.position || 0; posAt = performance.now();
+    const how = Sync.take(s);
     capture(s);
     if (s.active && s.playing && audio.paused) setSource('spotify', 'Spotify started playing');
     const k = s.active ? (s.key || s.title || "") : ""; const changed = k !== heroKey; heroKey = k;
+    const playChanged = !!s.playing !== lastPlay, artChanged = (s.art || '') !== lastArt; lastPlay = !!s.playing; lastArt = s.art || '';
     if (open) { if (top().p === 'home' && !changed) refreshHero(); else refresh(); }
-    syncMini();
+    syncMini(); kick();
+    // sync debugging: session event -> on screen (song / play state / cover changes only, not every position report)
+    if (s.active && s.evAt && (changed || playChanged || artChanged)) DBG.add('sync', `tab: “${String(s.title || '').slice(0, 40)}” ${s.playing ? 'playing' : 'paused'}${changed ? ' (new song)' : artChanged ? ' (cover)' : ''} shown ${Math.max(0, Date.now() - s.evAt)} ms after the session event · bar ${how}`);
+  }
+  // smooth bar while playing (every frame), a slow tick otherwise; nothing at all while the tab is closed
+  function kick() {
+    if (raf || !open || !st().playing) return;
+    const loop = () => { raf = 0; if (!open || !st().playing) return; if (top().p === 'now') paintTime(); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+  }
+  /** pull a fresh snapshot from Android (tab shown, app resumed) instead of waiting for the next session event */
+  function pull(why) {
+    try { const s = JSON.parse(N.extState()); if (window.LucielAndroidBridge && window.LucielAndroidBridge.ext) window.LucielAndroidBridge.ext(s); else onState(s); DBG.add('sync', `tab: fresh state (${why})`); } catch (e) {}
+  }
+  /** the stage's own beat reading (updated every frame while the tab drives the stage) beats the last session snapshot */
+  const liveTempo = () => { const E = EXT(); return E.on && E.bpm > 0 ? { bpm: E.bpm, bpmSource: E.source, tempo: '' } : {}; };
+  function tempoLabel(s) {
+    const b = Math.round(s.bpm > 0 ? s.bpm : 120);
+    return s.tempo || (s.bpmSource === 'live' ? `♩ ${b} BPM · live` : s.bpmSource === 'tap' ? `♩ ${b} BPM · tapped` : `♩ ${b} BPM · steady · tap`);
   }
   function refreshHero() {
     // repaint only the parts that change, so the home page doesn't flicker or lose its scroll
@@ -347,7 +392,7 @@
   }
   function syncMini() { try { if (window.LucielMobile && window.LucielMobile.syncMini) window.LucielMobile.syncMini(); } catch (e) {} }
   audio.addEventListener('play', () => setSource('local', 'Luciel started playing'));
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && open) { readInfo(); refresh(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && open) { readInfo(); pull('app resumed'); } });
 
   window.LucielSpotify = {
     icon: I.tab,
@@ -358,11 +403,12 @@
       if (!root) { root = host; bind(root); }
       open = true; readInfo();
       try { window.LucielAndroidUI && window.LucielAndroidUI.extView(true); } catch (e) {}
+      pull('tab shown');
       render();
-      clearInterval(ticker); ticker = setInterval(() => { if (open && top().p === 'now') paintTime(); }, 500);
+      clearInterval(ticker); ticker = setInterval(() => { if (open && top().p === 'now') { paintTime(); const tp = $('spTempo'); const s = st(); if (tp && s.active) tp.textContent = tempoLabel(Object.assign({}, s, liveTempo())); } kick(); }, 250);
     },
     hide() {
-      open = false; clearInterval(ticker); stageHome();
+      open = false; clearInterval(ticker); if (raf) cancelAnimationFrame(raf); raf = 0; stageHome();
       try { window.LucielAndroidUI && window.LucielAndroidUI.extView(false); } catch (e) {}
     },
     /** what the mini bar above the tabs should show for Spotify (null = show Luciel's own music) */
@@ -373,6 +419,6 @@
       return { title: s.title || 'Spotify', artist: s.artist || s.app || '', art: s.art || '', playing: !!s.playing, progress: d ? Math.min(1, posNow() / d) : 0 };
     },
     // for tests
-    _lib: Library, _links: Links, _quick: QUICK, get _page() { return top().p; },
+    _lib: Library, _links: Links, _quick: QUICK, get _page() { return top().p; }, _sync: Sync, _tempo: tempoLabel,
   };
 })();

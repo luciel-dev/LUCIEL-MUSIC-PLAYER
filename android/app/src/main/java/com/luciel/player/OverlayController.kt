@@ -29,8 +29,10 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
     private val hideRunnable = Runnable { hide() }
     private val listener: (ExtTrack?) -> Unit = { main.post { onTrack(it) } }
 
-    fun start() { NowPlayingHub.listeners.add(listener); onTrack(NowPlayingHub.current); instance = this }
-    fun stop() { NowPlayingHub.listeners.remove(listener); main.removeCallbacks(hideRunnable); hide(); if (instance === this) instance = null }
+    /** Luciel's scene / theme / outfit changed (or auto-switched with the genre / mood): the card follows at once */
+    private val visualListener: (VisualState) -> Unit = { vs -> view?.visual = vs }
+    fun start() { NowPlayingHub.listeners.add(listener); VisualHub.listeners.add(visualListener); onTrack(NowPlayingHub.current); instance = this }
+    fun stop() { NowPlayingHub.listeners.remove(listener); VisualHub.listeners.remove(visualListener); main.removeCallbacks(hideRunnable); hide(); if (instance === this) instance = null }
 
     fun canShow() = Settings.canDrawOverlays(svc)
 
@@ -51,14 +53,14 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
     }
 
     /** settings changed / app went to background */
-    fun refresh() { main.post { view?.collapsed = prefs.overlayMode == "bubble"; view?.large = prefs.overlayMode == "large"; view?.sceneId = prefs.overlayScene; view?.alpha = prefs.overlayOpacity / 100f; applySize(); onTrack(NowPlayingHub.current) } }
+    fun refresh() { main.post { view?.collapsed = prefs.overlayMode == "bubble"; view?.large = prefs.overlayMode == "large"; view?.visual = VisualHub.current; view?.alpha = prefs.overlayOpacity / 100f; applySize(); onTrack(NowPlayingHub.current) } }
 
     private fun widthPx() = when (prefs.overlayMode) { "bubble" -> (64 * dp).toInt(); "large" -> (prefs.overlayLargeDp * dp).toInt(); else -> (prefs.overlaySizeDp * dp).toInt() }
 
     private fun show() {
         if (view != null || !canShow()) return
         val v = LucielleCardView(ctx, assets, this)
-        v.collapsed = prefs.overlayMode == "bubble"; v.large = prefs.overlayMode == "large"; v.sceneId = prefs.overlayScene; v.alpha = prefs.overlayOpacity / 100f
+        v.collapsed = prefs.overlayMode == "bubble"; v.large = prefs.overlayMode == "large"; v.visual = VisualHub.current; v.alpha = prefs.overlayOpacity / 100f
         v.track = NowPlayingHub.current
         val m = svc.resources.displayMetrics
         val p = WindowManager.LayoutParams(

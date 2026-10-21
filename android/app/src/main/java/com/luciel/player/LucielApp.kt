@@ -12,6 +12,7 @@ class LucielApp : Application() {
             description = "Shown only while the floating Lucielle is visible"; setShowBadge(false)
         })
         Prefs.get(this)
+        VisualHub.init(this)
         NowPlayingHub.init(this)
         FloaterController.init(this)
         if (BuildConfig.DEBUG) DebugFloaterHook.register(this)

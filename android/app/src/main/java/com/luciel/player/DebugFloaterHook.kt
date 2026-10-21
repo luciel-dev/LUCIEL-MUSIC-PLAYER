@@ -41,6 +41,11 @@ object DebugFloaterHook {
             }.start()
             return
         }
+        // `--es visualFile visual.json` (in the app's files dir): set Luciel's look as the page would publish it
+        i.getStringExtra("visualFile")?.let { f -> try { VisualHub.set(java.io.File(ctx.filesDir, f).readText()); DebugLog.add("debug", "visual state from $f: ${VisualHub.current.sceneName}") } catch (e: Throwable) { Log.w("LucielFloater", "visualFile", e) } }
+        // `--es render tag`: draw the Spotify card + the floater in every mode offscreen and save PNGs to files/render
+        // (no overlay windows needed – the slow emulator can't show them reliably)
+        i.getStringExtra("render")?.let { tag -> render(ctx, tag, i.getStringExtra("palette") ?: "aero", i.getFloatExtra("bpm", 121f)); return }
         active = true
         val pal = i.getStringExtra("palette") ?: "aero"
         val skin = i.getStringExtra("skin") ?: "aero"
@@ -76,5 +81,53 @@ object DebugFloaterHook {
             else -> s
         }
         fake = n; FloaterController.onWebState(n); return true
+    }
+
+    // ------------------------------------------------------------------ offscreen render (debug screenshots)
+    private fun render(ctx: Context, tag: String, pal: String, bpm: Float) {
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        val assets = LucielleAssets(ctx)
+        val dp = ctx.resources.displayMetrics.density
+        val dir = java.io.File(ctx.filesDir, "render").apply { mkdirs() }
+        val now = SystemClock.elapsedRealtime()
+        val ext = ExtTrack("com.spotify.music", "Spotify", "Nights Like This", "Drake", "Scorpion", 200_000, true, 61_000, now, 1f, 0, null, "hip hop", "dbg-render", now)
+        val p = (PALETTES[pal] ?: PALETTES.getValue("aero")).map { CssColor.parse(it, 0) }
+        val th = if (VisualHub.current.hasState) VisualHub.current.theme else FloaterTheme("aero", pal, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10])
+        val web = WebState(id = "dbg-r", title = "Nights Like This", artist = "Drake", album = "Scorpion", durationMs = 200_000, positionMs = 61_000, playing = true, hasTrack = true,
+            bpm = bpm, beatPos = 130.0, theme = th, sceneId = VisualHub.current.sceneId)
+        val cardHost = object : LucielleCardView.Host {
+            override fun onDrag(dx: Int, dy: Int) {}; override fun onDragEnd() {}; override fun onResize(dw: Int) {}; override fun onResizeEnd() {}
+            override fun onOpenApp() {}; override fun onSettings() {}; override fun onCollapse(collapsed: Boolean) {}; override fun onClose() {}
+            override fun onToggleSize() {}; override fun onOpenPlayer() {}; override fun onLongPressBubble() {}
+        }
+        val flHost = object : FloaterView.Host {
+            override fun onDrag(dx: Int, dy: Int) {}; override fun onDragEnd() {}; override fun onResize(dw: Int) {}; override fun onResizeEnd() {}
+            override fun onCommand(cmd: String, arg: Long) {}; override fun onOpenApp() {}; override fun onMode(mode: String) {}; override fun onClose() {}; override fun onLongPressBubble() {}
+        }
+        val tctx = android.view.ContextThemeWrapper(ctx, R.style.Theme_Luciel)
+        val views = listOf<Pair<String, android.view.View>>(
+            "card-compact" to LucielleCardView(tctx, assets, cardHost).apply { track = ext; layoutParams = android.view.ViewGroup.LayoutParams((Prefs.get(ctx).overlaySizeDp * dp).toInt(), 0) },
+            "card-large" to LucielleCardView(tctx, assets, cardHost).apply { track = ext; large = true; layoutParams = android.view.ViewGroup.LayoutParams((Prefs.get(ctx).overlayLargeDp * dp).toInt(), 0) },
+            "card-bubble" to LucielleCardView(tctx, assets, cardHost).apply { track = ext; collapsed = true; layoutParams = android.view.ViewGroup.LayoutParams((64 * dp).toInt(), 0) },
+            "floater-compact" to FloaterView(tctx, assets, flHost).apply { state = web; mode = FloaterGeometry.COMPACT; layoutParams = android.view.ViewGroup.LayoutParams((Prefs.get(ctx).floaterCompactDp * dp).toInt(), 0) },
+            "floater-large" to FloaterView(tctx, assets, flHost).apply { state = web; mode = FloaterGeometry.LARGE; layoutParams = android.view.ViewGroup.LayoutParams((Prefs.get(ctx).floaterLargeDp * dp).toInt(), 0) },
+            "floater-bubble" to FloaterView(tctx, assets, flHost).apply { state = web; mode = FloaterGeometry.BUBBLE; layoutParams = android.view.ViewGroup.LayoutParams((FloaterGeometry.BUBBLE_DP * dp).toInt(), 0) },
+        )
+        fun draw(save: Boolean) {
+            for ((name, v) in views) {
+                val w = v.layoutParams.width
+                v.measure(android.view.View.MeasureSpec.makeMeasureSpec(w, android.view.View.MeasureSpec.EXACTLY), android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED))
+                v.layout(0, 0, v.measuredWidth, v.measuredHeight)
+                val b = android.graphics.Bitmap.createBitmap(v.measuredWidth.coerceAtLeast(1), v.measuredHeight.coerceAtLeast(1), android.graphics.Bitmap.Config.ARGB_8888)
+                b.eraseColor(0xFF202020.toInt())
+                v.draw(android.graphics.Canvas(b))
+                if (save) java.io.File(dir, "$tag-$name.png").outputStream().use { b.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                b.recycle()
+            }
+        }
+        // first pass starts the picture decodes, the second (after they finish) is saved
+        draw(false)
+        main.postDelayed({ draw(false) }, 3000)
+        main.postDelayed({ draw(true); DebugLog.add("debug", "rendered $tag (${views.size} views) to ${dir.absolutePath}"); Log.i("LucielFloater", "rendered $tag") }, 9000)
     }
 }

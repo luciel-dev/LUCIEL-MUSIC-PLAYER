@@ -23,6 +23,8 @@ data class ExtTrack(
     val pkg: String, val appLabel: String, val title: String, val artist: String, val album: String,
     val durationMs: Long, val playing: Boolean, val positionMs: Long, val positionAt: Long, val speed: Float,
     val artVersion: Int, val tint: Tint?, val genre: String?, val trackKey: String,
+    /** elapsedRealtime of the media-session callback this state came from (for the sync latency log) */
+    val eventAt: Long = 0L,
 ) {
     fun positionNow(now: Long = SystemClock.elapsedRealtime()): Long =
         if (!playing || positionAt <= 0) positionMs else (positionMs + ((now - positionAt) * speed).toLong()).coerceIn(0, if (durationMs > 0) durationMs else Long.MAX_VALUE)
@@ -44,7 +46,10 @@ object NowPlayingHub {
     private var controller: MediaController? = null
     private var lastPkg: String? = null
     private var artVersion = 0
+    private var artReq = 0
     private var lastArtKey: String? = null
+    private var lastEventAt = 0L
+    private var lastLoggedKey: String? = null
     @Volatile var artJpeg: ByteArray? = null; private set
     @Volatile var artBitmap: Bitmap? = null; private set
     private var tint: Tint? = null
@@ -96,8 +101,8 @@ object NowPlayingHub {
     }
 
     private val cb = object : MediaController.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackState?) { update(); if (state?.state == PlaybackState.STATE_PLAYING) main.postDelayed({ refresh() }, 300) }
-        override fun onMetadataChanged(metadata: MediaMetadata?) = update()
+        override fun onPlaybackStateChanged(state: PlaybackState?) { lastEventAt = SystemClock.elapsedRealtime(); update(); if (state?.state == PlaybackState.STATE_PLAYING) main.postDelayed({ refresh() }, 300) }
+        override fun onMetadataChanged(metadata: MediaMetadata?) { lastEventAt = SystemClock.elapsedRealtime(); update() }
         override fun onSessionDestroyed() { main.post { refresh() } }
     }
 
@@ -116,28 +121,34 @@ object NowPlayingHub {
         val playing = ps?.state == PlaybackState.STATE_PLAYING
         val key = "${c.packageName}|$title|$artist|$album"
         val prev = current
-        if (prev?.trackKey != key) beats.trackChanged()
-        // album art: bitmap in the metadata, or a content/http URI (content only – no network)
-        val artKey = key + "|" + (md?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI) ?: md?.getString(MediaMetadata.METADATA_KEY_ART_URI) ?: "")
-        if (artKey != lastArtKey) {
-            lastArtKey = artKey
-            val bmp = md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ART) ?: md?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
-            val uri = md?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI) ?: md?.getString(MediaMetadata.METADATA_KEY_ART_URI)
-            setArt(bmp, uri)
+        val now = SystemClock.elapsedRealtime()
+        val trackChanged = prev?.trackKey != key
+        if (trackChanged) {
+            beats.trackChanged()
+            // never show the previous song's cover under the new title: drop it until the new one is decoded
+            artBitmap = null; artJpeg = null; tint = null; artReq++   // (also cancels a decode still running for the old song)
+            if (title.isNotEmpty() && key != lastLoggedKey) { lastLoggedKey = key; DebugLog.add("spotify", "session: new song “$title” – $artist (${c.packageName})") }
         }
+        // album art: bitmap in the metadata, or a content URI (content only – no network). Spotify often sends the
+        // title first and the picture in a second metadata update, so the bitmap itself is part of the key.
+        val bmp = md?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART) ?: md?.getBitmap(MediaMetadata.METADATA_KEY_ART) ?: md?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+        val uri = md?.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI) ?: md?.getString(MediaMetadata.METADATA_KEY_ART_URI)
+        val artKey = ArtRules.key(key, uri, bmp?.width ?: 0, bmp?.height ?: 0, bmp?.generationId ?: 0)
+        if (artKey != lastArtKey) { lastArtKey = artKey; setArt(bmp, uri) }
         val t = ExtTrack(
             pkg = c.packageName, appLabel = label(c.packageName), title = title, artist = artist, album = album,
             durationMs = dur, playing = playing, positionMs = ps?.position ?: 0L,
-            positionAt = ps?.lastPositionUpdateTime ?: 0L, speed = ps?.playbackSpeed?.takeIf { it > 0f } ?: 1f,
+            positionAt = ps?.lastPositionUpdateTime?.takeIf { it > 0 } ?: now, speed = ps?.playbackSpeed?.takeIf { it > 0f } ?: 1f,
             artVersion = artVersion, tint = tint, genre = SceneGuess.genre(title, album, artist), trackKey = key,
+            eventAt = if (lastEventAt > 0) lastEventAt else now,
         )
         beats.playing = playing
         publish(t)
     }
 
     private fun setArt(bmp: Bitmap?, uri: String?) {
-        val v = ++artVersion
-        if (bmp == null && uri.isNullOrBlank()) { artBitmap = null; artJpeg = null; tint = null; return }
+        val v = ++artReq
+        if (bmp == null && uri.isNullOrBlank()) return            // keep what we have (cleared on a song change); a picture may follow
         io.execute {
             try {
                 var b = bmp
@@ -152,8 +163,10 @@ object NowPlayingHub {
                 val ti = CoverPalette.extract(px)
                 val out = ByteArrayOutputStream(); small.compress(Bitmap.CompressFormat.JPEG, 88, out)
                 main.post {
-                    if (v != artVersion) return@post
+                    if (v != artReq) return@post
+                    artVersion++                                   // new URL for the page: /_n/ext-art?v=<artVersion>
                     artBitmap = small; artJpeg = out.toByteArray(); tint = ti
+                    lastEventAt = SystemClock.elapsedRealtime()
                     update()
                 }
             } catch (t: Throwable) { Log.w(TAG, "art", t) }
@@ -187,4 +200,9 @@ object NowPlayingHub {
         if (want) beats.start() else beats.stop()
     }
     fun restartBeats() { beats.stop(); syncBeats() }
+}
+
+/** cover-art bookkeeping rules (unit-tested): what identifies "a new picture" for a song */
+object ArtRules {
+    fun key(trackKey: String, uri: String?, w: Int, h: Int, gen: Int): String = trackKey + "|" + (uri ?: "") + "|" + (if (w > 0) "${w}x$h#$gen" else "-")
 }

@@ -15,7 +15,7 @@ async function open({ port = 8970, width = 412, height = 915, insets = [32, 0, 2
   if (android) await ctx.addInitScript(mock);
   const page = await ctx.newPage();
   const errors = [];
-  page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message));
+  page.on('pageerror', (e) => errors.push('PAGEERROR ' + e.message + (process.env.STACK ? ' ' + e.stack : '')));
   page.on('console', (m) => { if (m.type() === 'error' && !/favicon|404|ERR_ABORTED/.test(m.text())) errors.push(m.text()); if (/^PROBE/.test(m.text())) console.log(m.text()); });
   await page.goto(`http://127.0.0.1:${port}${url}`, { waitUntil: 'networkidle' });
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); return new Promise((r) => { const q = indexedDB.deleteDatabase('luciel'); q.onsuccess = q.onerror = q.onblocked = () => r(); }); });
