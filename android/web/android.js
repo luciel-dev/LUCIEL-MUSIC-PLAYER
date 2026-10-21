@@ -181,7 +181,7 @@
     const libOpen = $('winLib') && !$('winLib').hidden;
     if (anyOverlay || (edit && !edit.hidden) || libOpen) { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return true; }
     if (A.mini && A.mini.isOpen) { A.mini.close(); return true; }
-    if (EXT.on) { exitExt(true); return true; }
+    if (EXT.on && !mobileUI()) { exitExt(true); return true; }   // phone layout: the Spotify tab owns this, back walks its pages
     if (window.LucielMobile && window.LucielMobile.active && window.LucielMobile.back()) return true;
     return false;
   };
@@ -191,6 +191,7 @@
     const had = perms || {}; perms = p || {};
     if (perms.audio && !had.audio) scan(false);
     renderSheet(); renderChip();
+    if (window.LucielSpotify) window.LucielSpotify.onPerms();
   };
 
   // ================================================================== "Now playing on Spotify" (any outside player)
@@ -270,7 +271,8 @@
     EXT.state = st;
     if (!EXT.on) {
       // auto-switch: outside player starts while Luciel itself is idle
-      if (st && st.active && st.playing && audio.paused && prefs.autoExtMode !== false && appVisible && EXT.dismissedKey !== st.key) enterExt(false);
+      // (the phone layout has its own Spotify tab, so no automatic takeover of the Now Playing stage there)
+      if (st && st.active && st.playing && audio.paused && prefs.autoExtMode !== false && appVisible && EXT.dismissedKey !== st.key && !mobileUI()) enterExt(false);
       renderChip(); return;
     }
     EXT.playing = !!(st && st.active && st.playing);
@@ -283,10 +285,27 @@
     }
     applyTint(st); renderPanel();
   }
-  B.ext = (st) => { onExt(st, false); if (!ov.hidden) renderSheet(); };
-  B.extMode = (on) => { if (on) { try { onExt(JSON.parse(N.extState()), false); } catch (e) {} enterExt(true); } else exitExt(true); };
+  const mobileUI = () => !!(window.LucielMobile && window.LucielMobile.active && window.LucielSpotify);
+  B.ext = (st) => { onExt(st, false); if (!ov.hidden) renderSheet(); if (window.LucielSpotify) window.LucielSpotify.onState(st); };
+  // the phone's Spotify tab: Spotify-driven visuals while the tab is open, without taking over the rest of the app
+  function extView(on) {
+    if (!on) { exitExt(false); return; }
+    if (EXT.on) return;
+    EXT.on = true; savedScene = A.settings.scene;
+    A.engine.ensure && A.engine.ensure();
+    try { N.extUse(true); } catch (e) {}
+    lastKey = ''; if (EXT.state && EXT.state.active) onExt(EXT.state, true);
+    if (!pollRaf) pollRaf = requestAnimationFrame(poll);
+  }
+  B.extMode = (on) => {
+    if (on && mobileUI()) { closeSheet(); window.LucielMobile.setTab('spotify'); return; } if (on) { try { onExt(JSON.parse(N.extState()), false); } catch (e) {} enterExt(true); } else exitExt(true); };
   B.visible = (v) => { appVisible = v; if (v && EXT.on && !pollRaf) pollRaf = requestAnimationFrame(poll); if (v) { try { onExt(JSON.parse(N.extState()), false); } catch (e) {} } };
-  audio.addEventListener('play', () => { if (EXT.on) exitExt(false); });
+  audio.addEventListener('play', () => {
+    if (EXT.on) exitExt(false);
+    // one source at a time: Luciel starting its own music pauses Spotify through its media session
+    const st = EXT.state;
+    if (st && st.active && st.playing) { try { N.extCommand('pause', 0); } catch (e) {} st.playing = false; if (window.LucielDebug) window.LucielDebug.add('source', `paused ${st.app || 'Spotify'}: Luciel started playing (one source at a time)`); }
+  });
 
   // ---- the panel shown over the scene in Spotify mode
   const svg = (d, vb = '0 0 24 24') => `<svg viewBox="${vb}" aria-hidden="true">${d}</svg>`;
@@ -453,5 +472,5 @@
   setTimeout(() => { if (perms.audio) scan(!localStorage.getItem('luciel.android.scanned')); }, 800);
   try { onExt(JSON.parse(N.extState()), false); } catch (e) {}
   report(true);
-  window.LucielAndroidUI = { openSheet, closeSheet, enterExt, exitExt, scan, EXT };
+  window.LucielAndroidUI = { openSheet, closeSheet, enterExt, exitExt, extView, scan, EXT };
 })();

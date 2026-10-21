@@ -32,6 +32,7 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
         fun onClose()
         fun onToggleSize()
         fun onOpenPlayer()
+        fun onLongPressBubble()
     }
 
     var collapsed = false
@@ -269,7 +270,7 @@ class LucielleCardView(ctx: Context, private val assets: LucielleAssets, private
     private val slop = ViewConfiguration.get(ctx).scaledTouchSlop
     private var downX = 0f; private var downY = 0f; private var lastX = 0f; private var lastY = 0f
     private var moved = false; private var resizing = false; private var longPressed = false
-    private val longPress = Runnable { if (!moved) { longPressed = true; performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); host.onSettings() } }
+    private val longPress = Runnable { if (!moved) { longPressed = true; performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); if (collapsed) host.onLongPressBubble() else host.onSettings() } }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {

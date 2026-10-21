@@ -1,6 +1,7 @@
 package com.luciel.player
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -35,6 +36,8 @@ class WebBridge(private val act: MainActivity) {
             put("overlay", prefs.overlayEnabled); put("spotifyOnly", prefs.spotifyOnly); put("visualizer", prefs.useVisualizer)
             put("fallbackBpm", prefs.fallbackBpm.toDouble()); put("autoExtMode", prefs.autoSpotifyMode); put("bgPlay", prefs.backgroundPlay)
             put("autoHide", prefs.autoHideSec); put("overlayScene", prefs.overlayScene); put("autoFloater", prefs.autoFloater)
+            put("overlayMode", prefs.overlayMode); put("floaterClosed", prefs.floaterClosed)
+            put("spotifyInstalled", try { act.packageManager.getLaunchIntentForPackage(Prefs.SPOTIFY) != null } catch (_: Throwable) { false })
         })
     }.toString()
 
@@ -129,7 +132,8 @@ class WebBridge(private val act: MainActivity) {
             "bgPlay" -> prefs.backgroundPlay = value == "true"
             "autoHide" -> prefs.autoHideSec = value.toIntOrNull() ?: 20
             "overlayScene" -> prefs.overlayScene = value
-            "autoFloater" -> prefs.autoFloater = value == "true"
+            "autoFloater" -> { prefs.autoFloater = value == "true"; main.post { FloaterController.autoSettingChanged(value == "true") } }
+            "overlayMode" -> prefs.overlayMode = value
         }
         OverlayController.instance?.refresh()
         FloaterController.update()
@@ -165,6 +169,25 @@ class WebBridge(private val act: MainActivity) {
     }
     @JavascriptInterface fun floaterState(): String = JSONObject().put("showing", FloaterController.isShowing).put("poppedOut", FloaterController.poppedOut)
         .put("decision", FloaterController.decision().name).put("rect", FloaterController.windowRect()?.let { JSONArray(it.toList()) } ?: JSONObject.NULL).toString()
+    /** Spotify overlay card from the Spotify tab: "on" / "off" / "show" (= on + step aside so it floats now) */
+    @JavascriptInterface fun overlayCard(cmd: String) = main.post {
+        when (cmd) {
+            "on", "show" -> { prefs.overlayEnabled = true; DebugLog.add("overlay", "Spotify overlay turned on (Spotify tab)") }
+            "off" -> { prefs.overlayEnabled = false; DebugLog.add("overlay", "Spotify overlay turned off (Spotify tab)") }
+        }
+        OverlayController.instance?.refresh(); FloaterController.update()
+        if (cmd == "show") { if (Settings.canDrawOverlays(act)) act.moveTaskToBack(true) else act.openSystem("overlay") }
+    }
+    /** deep link into Spotify (search, Liked Songs …); falls back to the web player URL. Returns how it opened. */
+    @JavascriptInterface fun openLink(appUri: String, webUrl: String): String {
+        val pm = act.packageManager
+        val app = Intent(Intent.ACTION_VIEW, Uri.parse(appUri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (appUri.startsWith("spotify:")) app.setPackage(Prefs.SPOTIFY)
+        val how = if (appUri.isNotEmpty() && app.resolveActivity(pm) != null) { main.post { try { act.startActivity(app) } catch (_: Throwable) {} }; "app" }
+            else { main.post { try { act.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(webUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } catch (_: Throwable) {} }; "web" }
+        DebugLog.add("spotify", "open $appUri ($how)")
+        return how
+    }
     /** tap on the stage: hide the system bars (swipe from an edge brings them back) */
     @JavascriptInterface fun immersive(on: Boolean) = main.post { act.setBarsHidden(on) }
 

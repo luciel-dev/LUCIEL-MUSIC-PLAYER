@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Looper
+import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -111,7 +112,8 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         player = WebPlayer(Looper.getMainLooper()) { cmd, pos -> control(cmd, pos) }
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        session = MediaSession.Builder(this, player).setSessionActivity(open).setId("luciel").build()
+        session = MediaSession.Builder(this, player).setSessionActivity(open).setId("luciel").setCallback(callback)
+            .setMediaButtonPreferences(com.google.common.collect.ImmutableList.of(closeButton)).build()
         instance = this
         WebBridge.lastState?.let { onWebState(it) }
     }
@@ -130,6 +132,27 @@ class PlaybackService : MediaSessionService() {
             "toggle" -> WebBridge.sendCommand(if (player.web.playing) "pause" else "play", pos)
             else -> WebBridge.sendCommand(cmd, pos)
         }
+    }
+
+    // ---- "Close overlay" in the notification: closes the floater + the Spotify card, never the music
+    private val closeCmd = androidx.media3.session.SessionCommand(ACTION_CLOSE_OVERLAY, android.os.Bundle.EMPTY)
+    @OptIn(UnstableApi::class)
+    private val closeButton = androidx.media3.session.CommandButton.Builder(androidx.media3.session.CommandButton.ICON_UNDEFINED)
+        .setCustomIconResId(R.drawable.ic_close_overlay).setDisplayName("Close overlay").setSessionCommand(closeCmd)
+        .setSlots(androidx.media3.session.CommandButton.SLOT_OVERFLOW).build()
+    @OptIn(UnstableApi::class)
+    private val callback = object : MediaSession.Callback {
+        override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult =
+            MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon().add(closeCmd).build()).build()
+        override fun onCustomCommand(session: MediaSession, controller: MediaSession.ControllerInfo, customCommand: androidx.media3.session.SessionCommand, args: android.os.Bundle): com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.SessionResult> {
+            if (customCommand.customAction == ACTION_CLOSE_OVERLAY) closeOverlays("notification")
+            return Futures.immediateFuture(androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS))
+        }
+    }
+    fun closeOverlays(why: String) {
+        FloaterController.close(why)
+        OverlayController.instance?.let { if (it.isShowing || Prefs.get(this).overlayEnabled) it.closeFully(why) }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
@@ -162,5 +185,8 @@ class PlaybackService : MediaSessionService() {
         super.onDestroy()
     }
 
-    companion object { @Volatile var instance: PlaybackService? = null }
+    companion object {
+        @Volatile var instance: PlaybackService? = null
+        const val ACTION_CLOSE_OVERLAY = "com.luciel.player.CLOSE_OVERLAY"
+    }
 }

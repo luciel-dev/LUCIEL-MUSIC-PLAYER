@@ -289,7 +289,7 @@ class MainActivity : ComponentActivity() {
             "battery" -> Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
             "onboarding" -> Intent(this, OnboardingActivity::class.java).putExtra("again", true)
             "overlaySettings" -> Intent(this, OverlaySettingsActivity::class.java)
-            "spotify" -> packageManager.getLaunchIntentForPackage(Prefs.SPOTIFY)
+            "spotify" -> packageManager.getLaunchIntentForPackage(Prefs.SPOTIFY) ?: Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${Prefs.SPOTIFY}"))
             else -> null
         } ?: return
         try { startActivity(i) } catch (_: Throwable) { try { startActivity(Intent(Settings.ACTION_SETTINGS)) } catch (_: Throwable) {} }

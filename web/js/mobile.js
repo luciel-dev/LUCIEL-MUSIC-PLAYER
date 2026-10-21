@@ -35,6 +35,10 @@
     note: use('i-note'), libI: use('i-lib'), plus: use('i-plus'), folder: use('i-folder'), search: use('i-search'), trash: use('i-trash'), pack: use('i-pack'),
   };
   const G_ = (c) => `<i class="m-glyph">${c}</i>`;
+  // Android: the Spotify tab (android/spotify.js registers window.LucielSpotify before this file runs)
+  const HAS_SP = isAndroid() && !!window.LucielSpotify;
+  const SP = () => (HAS_SP ? window.LucielSpotify : null);
+  const TABS = HAS_SP ? ['player', 'library', 'spotify', 'visuals', 'settings'] : ['player', 'library', 'visuals', 'settings'];
 
   // ------------------------------------------------------------------ shell
   let built = false, active = false;
@@ -62,13 +66,15 @@
     </div>
   </section>
   <section class="m-screen m-library" data-screen="library" aria-label="Library"><div class="m-stack" id="mStack"></div></section>
+  ${HAS_SP ? '<section class="m-screen m-spotify" data-screen="spotify" aria-label="Spotify"><div class="m-page sp-root" id="mSpotify"></div></section>' : ''}
   <section class="m-screen m-visuals" data-screen="visuals" aria-label="Visuals"><div class="m-page" id="mVisuals"></div></section>
   <section class="m-screen m-settings" data-screen="settings" aria-label="Settings"><div class="m-page" id="mSettings"></div></section>
   <div class="m-mini" id="mMini" hidden><i class="m-mini-prog" id="mMiniProg"></i><img id="mMiniArt" alt=""><div class="m-mini-text"><b id="mMiniTitle"></b><span id="mMiniArtist"></span></div>
-    <button class="m-ic" id="mMiniPlay" title="Play / pause"><span class="m-ic-play">${IC.play}</span><span class="m-ic-pause">${IC.pause}</span></button><button class="m-ic" id="mMiniNext" title="Next">${IC.next}</button></div>
+    <button class="m-ic" id="mMiniPlay" title="Play / pause"><span class="m-ic-play">${IC.play}</span><span class="m-ic-pause">${IC.pause}</span></button><button class="m-ic" id="mMiniNext" title="Next">${IC.next}</button><em class="m-src" id="mMiniSrc" hidden></em></div>
   <nav class="m-tabs" id="mTabs" role="tablist">
-    <button data-tab="player" role="tab">${IC.note}<span>Now Playing</span></button>
+    <button data-tab="player" role="tab">${IC.note}<span>${HAS_SP ? 'Playing' : 'Now Playing'}</span></button>
     <button data-tab="library" role="tab">${IC.libI}<span>Library</span></button>
+    ${HAS_SP ? `<button data-tab="spotify" role="tab">${window.LucielSpotify.icon}<span>Spotify</span></button>` : ''}
     <button data-tab="visuals" role="tab">${IC.spark}<span>Visuals</span></button>
     <button data-tab="settings" role="tab">${IC.gear}<span>Settings</span></button>
   </nav>`;
@@ -79,14 +85,16 @@
   // ------------------------------------------------------------------ tabs
   let tab = 'player';
   function setTab(t, quiet) {
-    if (!['player', 'library', 'visuals', 'settings'].includes(t)) t = 'player';
-    const prevTab = tab; tab = t; shell.dataset.tab = t; body.dataset.mtab = t;
+    if (!TABS.includes(t)) t = 'player';
+    const prevTab = tab; tab = t;
+    if (prevTab === 'spotify' && t !== 'spotify') SP().hide(); shell.dataset.tab = t; body.dataset.mtab = t;
     shell.querySelectorAll('#mTabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === t); b.setAttribute('aria-selected', b.dataset.tab === t); });
     if (t === 'library' && !stack.length) push({ type: 'home' }, true);
     if (t === 'library') { const top = stack[stack.length - 1]; if (top && dirtyViews.has(top)) { dirtyViews.delete(top); refreshView(top); } }
     if (t === 'visuals') renderVisuals();
     if (t === 'settings') renderSettings();
     if (t === 'player') syncPlayer(true);
+    if (t === 'spotify') SP().show($('mSpotify'));
     syncMini();
     if (!quiet && prevTab !== t) try { sessionStorage.setItem('luciel.m.tab', t); } catch (e) {}
     requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
@@ -161,9 +169,9 @@
     $('mPMore').onclick = playerMenu;
     $('mVizChip').onclick = (e) => { e.stopPropagation(); A.cycleViz(); syncPlayer(); };
     $('mSceneChip').onclick = (e) => { e.stopPropagation(); scenePicker(); };
-    $('mMiniPlay').onclick = (e) => { e.stopPropagation(); A.togglePlay(); };
-    $('mMiniNext').onclick = (e) => { e.stopPropagation(); A.next(); };
-    $('mMini').onclick = () => setTab('player');
+    $('mMiniPlay').onclick = (e) => { e.stopPropagation(); if (miniSrc === 'spotify') SP().cmd('toggle'); else A.togglePlay(); };
+    $('mMiniNext').onclick = (e) => { e.stopPropagation(); if (miniSrc === 'spotify') SP().cmd('next'); else A.next(); };
+    $('mMini').onclick = () => setTab(miniSrc === 'spotify' ? 'spotify' : 'player');
     $('mPopOut').onclick = () => popOut();
     bindSeek(); bindStage();
   }
@@ -204,12 +212,21 @@
   }
 
   // ---- mini "now playing" bar (every tab except the player)
+  // the mini bar shows whichever source is active (Luciel's own music or Spotify) with a small source badge
+  let miniSrc = 'local';
   function syncMini() {
-    const t = A.current, show = active && tab !== 'player' && !!t;
-    const m = $('mMini'); m.hidden = !show; shell.classList.toggle('m-has-mini', show); body.classList.toggle('m-has-mini', show);
+    const m = $('mMini');
+    const sp = active && HAS_SP ? SP().miniInfo(tab) : null;
+    const t = A.current, show = active && (sp ? true : tab !== 'player' && !!t);
+    m.hidden = !show; shell.classList.toggle('m-has-mini', show); body.classList.toggle('m-has-mini', show);
+    miniSrc = sp ? 'spotify' : 'local';
+    m.classList.toggle('src-sp', !!sp); m.classList.toggle('sp-playing', !!(sp && sp.playing));
+    const badge = $('mMiniSrc'); badge.hidden = !HAS_SP; badge.textContent = sp ? 'Spotify' : 'Luciel';
     if (!show) return;
-    $('mMiniTitle').textContent = A.title(t); $('mMiniArtist').textContent = A.artist(t) || 'Unknown artist';
-    const src = thumbOf(t); const im = $('mMiniArt'); if (im.getAttribute('src') !== src) im.src = src;
+    const title = sp ? sp.title : A.title(t), artist = sp ? sp.artist : A.artist(t) || 'Unknown artist', src = sp ? sp.art || 'icons/icon-192.png' : thumbOf(t);
+    $('mMiniTitle').textContent = title; $('mMiniArtist').textContent = artist;
+    const im = $('mMiniArt'); if (im.getAttribute('src') !== src) im.src = src;
+    if (sp) P.miniProg.style.width = (sp.progress * 100).toFixed(2) + '%';
   }
 
   // ------------------------------------------------------------------ bottom sheets
@@ -828,6 +845,7 @@
     if (closeSheet()) return true;
     if (immersive) { setImmersive(false); return true; }
     if (tab === 'library' && stack.length > 1) { pop(); return true; }
+    if (tab === 'spotify' && SP().back()) return true;
     if (tab !== 'player') { setTab('player'); return true; }
     return false;
   }
@@ -863,7 +881,7 @@
     const st = $('mStage');
     borrow($('stageWrap'), st); borrow(document.querySelector('.px-stage-frame'), st); borrow($('vizWrap'), st); borrow($('lcd'), st);
     st.appendChild(st.querySelector('.m-stage-chips')); st.appendChild($('mStageHint'));
-    let t0 = 'player'; try { t0 = sessionStorage.getItem('luciel.m.tab') || 'player'; } catch (e) {}
+    let t0 = 'player'; try { t0 = sessionStorage.getItem('luciel.m.tab') || (HAS_SP && SP().source === 'spotify' ? 'spotify' : 'player'); } catch (e) {}
     setTab(t0, true); syncPlayer(true); syncMini();
     if (lib.isOpen && lib.isOpen()) lib.close();
     window.dispatchEvent(new Event('resize'));
@@ -876,11 +894,18 @@
     window.dispatchEvent(new Event('resize'));
   }
   function check() { if (wanted()) activate(); else deactivate(); }
+  // the Lucielle stage (canvas + visualizers) is one set of nodes; the Spotify tab borrows it while it's open
+  function stageTo(host) {
+    const st = $('mStage'), to = host || st;
+    const nodes = [$('stageWrap'), document.querySelector('.px-stage-frame'), $('vizWrap'), $('lcd')].filter(Boolean);
+    if (to === st) { const chips = st.querySelector('.m-stage-chips'); nodes.forEach((n) => st.insertBefore(n, chips)); } else nodes.forEach((n) => to.appendChild(n));
+    requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+  }
   if (mq.addEventListener) mq.addEventListener('change', check); else mq.addListener(check);
   check();
 
   window.LucielMobile = {
     get active() { return active; }, back, setTab, get tab() { return tab; }, push, pop, goLib, get depth() { return stack.length; }, get view() { const t = stack[stack.length - 1]; return t ? t.v : null; },
-    openQueue, openEq, closeSheet, get sheet() { return sheetHost.hidden ? '' : sheet.kind; }, setImmersive, get immersive() { return immersive; }, scenePicker, trackSheet, popOut, check, syncPlayer,
+    openQueue, openEq, closeSheet, get sheet() { return sheetHost.hidden ? '' : sheet.kind; }, setImmersive, get immersive() { return immersive; }, scenePicker, trackSheet, popOut, check, syncPlayer, syncMini, stageTo, menuSheet, openSheet: (h, o) => openSheet(h, o), get tabs() { return TABS.slice(); },
   };
 })();

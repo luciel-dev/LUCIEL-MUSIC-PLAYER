@@ -144,30 +144,42 @@ async function charOpacity(page, ms = 1500) {
   // 8) outside player (Spotify) -> chip, then auto scene mode when Luciel is idle
   await page.evaluate(() => window.Luciel.app.engine.audio.pause());
   await page.evaluate(() => { window.__ext = { active: true, pkg: 'com.spotify.music', app: 'Spotify', spotify: true, title: 'Midnight City Drive', artist: 'Neon Arcade', album: 'Retrowave Nights', genre: 'synthwave', duration: 241, position: 42, playing: true, key: 'k1', art: '/_n/ext-art?v=1', tint: { accent: '#ff3fa4', accent2: '#7a5cff', bg: '#1a0b1f', family: 'red' }, scene: 'synthwave' }; window.LucielAndroidBridge.ext(window.__ext); });
+  await page.waitForTimeout(1200);
+  // phone layout: Spotify never takes over the Playing tab; it has its own tab
+  ok(await page.evaluate(() => !window.LucielExt.on && !document.body.classList.contains('ext-mode') && document.getElementById('mShell').dataset.tab === 'player'), 'Spotify playing while Luciel is idle -> no surprise takeover of the Playing tab (phone layout)');
+  await page.evaluate(() => document.querySelector('#mTabs [data-tab="spotify"]').click());
   await page.waitForTimeout(2500);
-  const ext = await page.evaluate(() => ({ on: window.LucielExt.on, cls: document.body.classList.contains('ext-mode'), bpm: window.Luciel.app.tracker.bpm, src: window.Luciel.app.tracker.source, scene: window.Luciel.app.luciel.scene && window.Luciel.app.luciel.scene.id, layer: window.Luciel.app.luciel.layer, title: document.getElementById('extTitle').textContent, use: window.__calls.includes('extUse:true'), viz: window.Luciel.app.vizBig.an === window.LucielExt.analyser }));
+  const ext = await page.evaluate(() => ({ on: window.LucielExt.on, bpm: window.Luciel.app.tracker.bpm, src: window.Luciel.app.tracker.source, scene: window.Luciel.app.luciel.scene && window.Luciel.app.luciel.scene.id, layer: window.Luciel.app.luciel.layer, title: (document.querySelector('#mSpotify .sp-hero') || {}).textContent || '', use: window.__calls.includes('extUse:true'), viz: window.Luciel.app.vizBig.an === window.LucielExt.analyser }));
   console.log(ext);
-  ok(ext.on && ext.cls && ext.use, 'Spotify playing while Luciel is idle -> scene mode switches on automatically');
+  ok(ext.on && ext.use, 'Spotify tab -> Spotify-driven visuals on');
   ok(Math.abs(ext.bpm - 128) < 1 && ext.src === 'tag', 'beat grid follows the Android beat engine (128 BPM)');
   ok(ext.scene === 'synthwave', 'scene picked from the Spotify track (synthwave)');
   ok(ext.layer && (ext.layer.kind === 'dance' || ext.layer.kind === 'pose'), `Lucielle on stage (${ext.layer && ext.layer.kind}:${ext.layer && ext.layer.name})`);
-  ok(ext.title === 'Midnight City Drive' && ext.viz, 'panel shows the Spotify song; visualizers bound to outside audio');
-  const op2 = await charOpacity(page);
-  ok(op2.n > 5 && op2.minA >= 0.999 && op2.gridAfter === 0, `Spotify mode: Lucielle fully opaque, grid under her (min alpha ${op2.minA}, ${op2.n} draws, grid-over ${op2.gridAfter})`);
+  ok(/Midnight City Drive/.test(ext.title) && ext.viz, 'Spotify tab shows the Spotify song; visualizers bound to outside audio');
+  await page.evaluate(() => { localStorage.setItem('luciel.sp.nowView', JSON.stringify('lucielle')); document.querySelector('#mSpotify .sp-hero').click(); });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => { const v = document.querySelector('#mSpotify [data-view="lucielle"]'); if (v && !v.classList.contains('on')) v.click(); });
+  await page.waitForTimeout(2500);   // let the stage move + any dance crossfade settle
+  const op2 = await charOpacity(page); if (op2.minA < 0.999) console.log(op2);
+  ok(op2.n > 5 && op2.minA >= 0.999 && op2.gridAfter === 0, `Spotify player (Lucielle view): Lucielle fully opaque, grid under her (min alpha ${op2.minA}, ${op2.n} draws, grid-over ${op2.gridAfter})`);
   await page.waitForTimeout(1500);   // let the scene settle before the screenshot
   await page.screenshot({ path: path.join(SHOTS, 'web-spotify-mode.png') });
-  await page.evaluate(() => document.getElementById('extNext').click());
+  await page.evaluate(() => document.querySelector('#mSpotify [data-act="next"]').click());
   ok(await page.evaluate(() => window.__calls.includes('ext:next')), 'next button mirrors to Spotify through the MediaController');
-  await page.evaluate(() => document.getElementById('extTap').click());
-  await page.waitForTimeout(700);
-  ok(await page.evaluate(() => /124 BPM · tapped/.test(document.getElementById('extBpm').textContent) && Math.abs(window.Luciel.app.tracker.bpm - 124) < 1), 'tap tempo goes to Android; panel and dance grid follow the tapped 124 BPM');
-  ok(await page.evaluate(() => window.LucielAndroidBridge.back() === true && !window.LucielExt.on), 'back leaves Spotify mode');
+  await page.evaluate(() => { window.__perms.mic = false; window.LucielAndroidBridge.perms(Object.assign({}, window.__perms)); });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => document.querySelector('#mSpotify [data-act="tap"]').click());
+  await page.waitForTimeout(900);
+  ok(await page.evaluate(() => Math.abs(window.Luciel.app.tracker.bpm - 124) < 1), 'tap tempo (no mic) goes to Android; the dance grid follows the tapped 124 BPM');
+  await page.evaluate(() => { window.__perms.mic = true; window.LucielAndroidBridge.perms(Object.assign({}, window.__perms)); });
+  ok(await page.evaluate(() => window.LucielAndroidBridge.back() === true && document.getElementById('mSpotify').dataset.page === 'home' && window.LucielAndroidBridge.back() === true && !window.LucielExt.on && document.getElementById('mShell').dataset.tab === 'player'), 'back walks the Spotify pages, then leaves the tab (visuals back to Luciel)');
   await page.waitForTimeout(300);
-  ok(await page.evaluate(() => !document.getElementById('extChip').hidden), '"Spotify is playing" chip offered in the player');
+  ok(await page.evaluate(() => getComputedStyle(document.getElementById('extChip')).display === 'none' && getComputedStyle(document.getElementById('extPanel')).display === 'none'), 'old Spotify chip/panel hidden in the phone layout (the tab replaces them)');
+  ok(await page.evaluate(() => { window.LucielAndroidBridge.extMode(true); return document.getElementById('mShell').dataset.tab === 'spotify' && window.LucielExt.on; }), '"Spotify mode" (notification / overlay) opens the Spotify tab');
   await page.screenshot({ path: path.join(SHOTS, 'web-spotify-chip.png') });
-  ok(await page.evaluate(() => { document.getElementById('extChip').click(); return window.LucielExt.on; }), 'chip re-enters Spotify mode');
-  await page.evaluate(() => { const A = window.Luciel.app; A.playTrack(A.tracks[2]); }); await page.waitForTimeout(800);
-  ok(await page.evaluate(() => !window.LucielExt.on), 'playing a local song leaves Spotify mode');
+  await page.evaluate(() => { window.__calls.length = 0; const A = window.Luciel.app; A.playTrack(A.tracks[2]); }); await page.waitForTimeout(800);
+  ok(await page.evaluate(() => !window.LucielExt.on && window.__calls.includes('ext:pause')), 'playing a local song pauses Spotify and the stage follows Luciel again');
+  await page.evaluate(() => document.querySelector('#mTabs [data-tab="player"]').click());
 
   // 9) classic skin + other palettes on a phone
   for (const [pal, skin] of [['blue', 'classic'], ['slime', 'aero'], ['red', 'classic']]) {

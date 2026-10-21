@@ -51,3 +51,27 @@ object SeekMap {
         else -> "seek" to positionMs.coerceAtLeast(0)
     }
 }
+
+/**
+ * 1.1.2 closing rules for Luciel's own floater (pure, unit-tested). ✕ / long-press on the bubble / the bottom dismiss
+ * target / the notification's "Close overlay" close it for good: it stays closed until Pop out (or turning the
+ * auto pop-out setting back on). Pop out is one-shot: coming back to the app ends it, so it doesn't reappear every
+ * time you leave. Closing never touches playback.
+ */
+object CloseRules {
+    data class Floater(val poppedOut: Boolean = false, val closed: Boolean = false, val autoHidden: Boolean = false) {
+        val dismissed get() = closed || autoHidden
+    }
+    fun close(s: Floater) = Floater(poppedOut = false, closed = true, autoHidden = false)
+    fun popOut(s: Floater) = Floater(poppedOut = true, closed = false, autoHidden = false)
+    fun appFront(s: Floater) = s.copy(poppedOut = false)
+    fun playStarted(s: Floater) = s.copy(autoHidden = false)            // a closed floater stays closed
+    fun pausedLong(s: Floater) = if (s.poppedOut) s else s.copy(autoHidden = true)
+    fun autoSettingOn(s: Floater) = s.copy(closed = false)
+    fun trackGone(s: Floater) = s.copy(poppedOut = false)
+
+    /** the Spotify card: ✕ turns the overlay off (pref), Pop out / the Spotify tab switch turn it on again */
+    fun cardEnabledAfterClose() = false
+    /** commands a close action may send to any player: none (closing must never stop the music) */
+    val playbackCommandsOnClose: List<String> = emptyList()
+}

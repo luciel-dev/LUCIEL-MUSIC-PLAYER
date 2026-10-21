@@ -43,6 +43,7 @@ class FloaterView(ctx: Context, private val assets: LucielleAssets, private val 
         fun onOpenApp()
         fun onMode(mode: String)
         fun onClose()
+        fun onLongPressBubble()
     }
 
     var state: WebState? = null
@@ -468,7 +469,7 @@ class FloaterView(ctx: Context, private val assets: LucielleAssets, private val 
     private val slop = ViewConfiguration.get(ctx).scaledTouchSlop
     private var downX = 0f; private var downY = 0f; private var lastX = 0f; private var lastY = 0f
     private var moved = false; private var resizing = false; private var longPressed = false
-    private val longPress = Runnable { if (!moved && !seeking && !resizing) { longPressed = true; performHapticFeedback(HapticFeedbackConstants.LONG_PRESS); host.onOpenApp() } }
+    private val longPress = Runnable { if (!moved && !seeking && !resizing) { longPressed = true; performHapticFeedback(HapticFeedbackConstants.LONG_PRESS); if (mode == FloaterGeometry.BUBBLE) host.onLongPressBubble() else host.onOpenApp() } }
 
     private fun seekAt(x: Float): Long {
         val dur = state?.durationMs?.takeIf { it > 0 && it != androidx.media3.common.C.TIME_UNSET } ?: return -1

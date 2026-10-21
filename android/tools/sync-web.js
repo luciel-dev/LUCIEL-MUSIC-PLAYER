@@ -84,7 +84,7 @@ patch('index.html', [
 let html = fs.readFileSync(path.join(DST, 'index.html'), 'utf8');
 const m = html.match(/<script[^>]*src="js\/app\.js"[^>]*><\/script>/g);
 if (!m || m.length !== 1) { console.error('PATCH FAILED: app.js script tag'); process.exit(2); }
-html = html.replace(m[0], '<script src="android/android-pre.js"></script>\n' + m[0] + '\n<script src="android/android.js"></script>');
+html = html.replace(m[0], '<script src="android/android-pre.js"></script>\n' + m[0] + '\n<script src="android/android.js"></script>\n<script src="android/spotify.js"></script>');
 fs.writeFileSync(path.join(DST, 'index.html'), html);
 // the floater page is the desktop mini window – not used on Android
 fs.rmSync(path.join(DST, 'floater.html'), { force: true });

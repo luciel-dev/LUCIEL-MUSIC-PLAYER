@@ -96,8 +96,13 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
     }
 
     // ---- LucielleCardView.Host
-    override fun onDrag(dx: Int, dy: Int) { val p = lp ?: return; p.x += dx; p.y += dy; clampToScreen(); try { wm.updateViewLayout(view, p) } catch (_: Throwable) {} }
+    private val target by lazy { DismissTarget(svc) }
+    override fun onDrag(dx: Int, dy: Int) {
+        val p = lp ?: return; p.x += dx; p.y += dy; clampToScreen(); try { wm.updateViewLayout(view, p) } catch (_: Throwable) {}
+        target.show(); target.track(p.x + p.width / 2, p.y + (view?.height ?: 0) / 2)
+    }
     override fun onDragEnd() {
+        if (target.finish()) { closeFully("dropped on the close target"); return }
         val p = lp ?: return
         // collapsed bubble snaps to the nearest screen edge
         if (view?.collapsed == true) { val m = svc.resources.displayMetrics; p.x = if (p.x + p.width / 2 < m.widthPixels / 2) 0 else m.widthPixels - p.width; try { wm.updateViewLayout(view, p) } catch (_: Throwable) {} }
@@ -119,11 +124,15 @@ class OverlayController(private val svc: Context) : LucielleCardView.Host {
         clampToScreen(); onDragEnd()
     }
     override fun onOpenPlayer() { NowPlayingHub.openPlayerApp(svc) }
-    override fun onClose() {
-        dismissedKey = NowPlayingHub.current?.trackKey; hide()
+    override fun onClose() = closeFully("✕")
+    override fun onLongPressBubble() = closeFully("long-press on the bubble")
+    /** turns the Spotify overlay off (stays off until the Spotify tab / Pop out turns it on). Never touches playback. */
+    fun closeFully(why: String) {
+        prefs.overlayEnabled = CloseRules.cardEnabledAfterClose(); target.finish(); hide()
+        DebugLog.add("overlay", "Spotify overlay closed ($why) – music keeps playing")
         if (!prefs.overlayCloseHintShown) {
             prefs.overlayCloseHintShown = true
-            android.widget.Toast.makeText(svc, "Hidden for this song. It comes back on the next one – turn it off for good in Luciel › Spotify overlay.", android.widget.Toast.LENGTH_LONG).show()
+            android.widget.Toast.makeText(svc, "Spotify overlay closed. Turn it back on from Luciel’s Spotify tab.", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 

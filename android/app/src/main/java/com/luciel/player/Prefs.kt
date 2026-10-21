@@ -9,7 +9,7 @@ class Prefs(ctx: Context) {
 
     var onboarded: Boolean get() = sp.getBoolean("onboarded", false); set(v) = sp.edit().putBoolean("onboarded", v).apply()
     /** floating Lucielle over other apps when an outside player is playing */
-    var overlayEnabled: Boolean get() = sp.getBoolean("overlay", true); set(v) = sp.edit().putBoolean("overlay", v).apply()
+    var overlayEnabled: Boolean get() = sp.getBoolean("overlay", false); set(v) = sp.edit().putBoolean("overlay", v).apply()
     /** only react to Spotify (com.spotify.music) – otherwise any player (YouTube Music, Poweramp, ...) */
     var spotifyOnly: Boolean get() = sp.getBoolean("spotifyOnly", false); set(v) = sp.edit().putBoolean("spotifyOnly", v).apply()
     /** hide the overlay this many seconds after the outside player pauses (0 = keep it) */
@@ -43,6 +43,8 @@ class Prefs(ctx: Context) {
     var backgroundPlay: Boolean get() = sp.getBoolean("bgPlay", true); set(v) = sp.edit().putBoolean("bgPlay", v).apply()
     /** Luciel's own floater: pop out automatically when leaving the app while Luciel plays */
     var autoFloater: Boolean get() = sp.getBoolean("autoFloater", false); set(v) = sp.edit().putBoolean("autoFloater", v).apply()
+    /** Luciel's floater was closed (✕ / dismiss target / notification); stays closed until Pop out */
+    var floaterClosed: Boolean get() = sp.getBoolean("floaterClosed", false); set(v) = sp.edit().putBoolean("floaterClosed", v).apply()
     /** "compact" | "large" | "bubble" */
     var floaterMode: String get() = sp.getString("floaterMode", "compact") ?: "compact"; set(v) = sp.edit().putString("floaterMode", v).apply()
     /** mode to go back to when the bubble is tapped */

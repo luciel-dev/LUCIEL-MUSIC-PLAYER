@@ -35,22 +35,25 @@ object FloaterController : FloaterView.Host {
     private var inited = false
 
     @Volatile var state: WebState? = null; private set
-    /** the user pressed Pop out (stays until × or until the music is gone) */
-    var poppedOut = false; private set
-    /** closed with × (comes back on the next play or Pop out) */
-    var dismissed = false; private set
+    private var cs = CloseRules.Floater()
+    /** the user pressed Pop out (one-shot: ends when Luciel comes back to the front, or on ×) */
+    val poppedOut get() = cs.poppedOut
+    /** closed (×, long-press on the bubble, dismiss target, notification) or auto-hidden after a long pause */
+    val dismissed get() = cs.dismissed
     /** Luciel's own window is on screen */
     var appInFront = false
-        set(v) { if (field != v) { field = v; update() } }
+        set(v) { if (field != v) { field = v; if (v) cs = CloseRules.appFront(cs); update() } }
+    private val target by lazy { DismissTarget(app) }
 
     private var coverKey: String? = null
     private var sceneKey: String? = null
-    private val autoHide = Runnable { if (state?.playing != true && !poppedOut) { dismissed = true; update() } }
+    private val autoHide = Runnable { if (state?.playing != true) { cs = CloseRules.pausedLong(cs); update() } }
 
     fun init(ctx: Context) {
         if (inited) return
         inited = true
         app = ctx.applicationContext; prefs = Prefs.get(app)
+        cs = cs.copy(closed = prefs.floaterClosed)
         NowPlayingHub.listeners.add { main.post { update() } }
     }
 
@@ -73,9 +76,9 @@ object FloaterController : FloaterView.Host {
     fun onWebState(s: WebState) {
         if (!inited) return
         val was = state
-        if (s.playing && was?.playing != true) { dismissed = false; main.removeCallbacks(autoHide) }
+        if (s.playing && was?.playing != true) { cs = CloseRules.playStarted(cs); main.removeCallbacks(autoHide) }
         if (!s.playing && was?.playing == true && view != null && !poppedOut && prefs.autoHideSec > 0) { main.removeCallbacks(autoHide); main.postDelayed(autoHide, prefs.autoHideSec * 1000L) }
-        if (!s.hasTrack) poppedOut = false
+        if (!s.hasTrack) cs = CloseRules.trackGone(cs)
         state = s
         loadArt(s)
         view?.state = s
@@ -85,10 +88,19 @@ object FloaterController : FloaterView.Host {
     /** "Pop out" on the phone player: false when the permission is missing */
     fun popOut(): Boolean {
         if (!canDraw()) return false
-        poppedOut = true; dismissed = false; main.removeCallbacks(autoHide)
+        cs = CloseRules.popOut(cs); prefs.floaterClosed = false; main.removeCallbacks(autoHide)
+        DebugLog.add("overlay", "floater: Pop out")
         update(); return true
     }
-    fun close() { poppedOut = false; dismissed = true; update() }
+    /** closes the floater for good (until Pop out). Never sends a playback command. */
+    fun close(why: String = "✕") {
+        if (!inited) return
+        cs = CloseRules.close(cs); prefs.floaterClosed = true
+        DebugLog.add("overlay", "floater closed ($why) – music keeps playing")
+        target.finish(); update()
+    }
+    /** auto pop-out switched on in Settings: allow it again */
+    fun autoSettingChanged(on: Boolean) { if (on) { cs = CloseRules.autoSettingOn(cs); prefs.floaterClosed = false }; update() }
 
     fun update() {
         if (!inited) return
@@ -198,8 +210,10 @@ object FloaterController : FloaterView.Host {
     override fun onDrag(dx: Int, dy: Int) {
         val p = lp ?: return
         val (x, y) = FloaterGeometry.clamp(p.x + dx, p.y + dy, p.width, heightPx(), safeBounds()); p.x = x; p.y = y; relayout()
+        target.show(); target.track(p.x + p.width / 2, p.y + (view?.height ?: 0) / 2)
     }
-    override fun onDragEnd() = snapAndSave(mode == FloaterGeometry.BUBBLE)
+    override fun onDragEnd() { if (target.finish()) close("dropped on the close target") else snapAndSave(mode == FloaterGeometry.BUBBLE) }
+    override fun onLongPressBubble() = close("long-press on the bubble")
     override fun onResize(dw: Int) {
         val p = lp ?: return
         val (lo, hi) = if (mode == FloaterGeometry.LARGE) Prefs.FLOATER_LARGE_MIN to Prefs.FLOATER_LARGE_MAX else Prefs.FLOATER_COMPACT_MIN to Prefs.FLOATER_COMPACT_MAX
@@ -237,7 +251,7 @@ object FloaterController : FloaterView.Host {
             v.mode = next; relayout(); main.post { snapAndSave(next == FloaterGeometry.BUBBLE) }
         }
     }
-    override fun onClose() = close()
+    override fun onClose() = close("✕")
 
     /** for tests / debugging: current window rectangle */
     fun windowRect(): IntArray? { val p = lp ?: return null; val v = view ?: return null; return intArrayOf(p.x, p.y, p.width, v.height) }
